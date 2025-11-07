@@ -707,3 +707,113 @@ class AnchorSeedGenerator:
             return True
         except Exception:
             return False
+import hashlib
+import time
+import json
+from typing import List, Dict, Any
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.exceptions import InvalidSignature
+
+
+class ProvenanceTracker:
+    # ... (existing __init__, add_edit, _get_chain_tip_hash, get_provenance_chain methods) ...
+
+    def _get_event_hashable_payload(self, event: Dict[str, Any]) -> bytes:
+        """
+        Recreates the canonical, hashable payload string for signing verification.
+        """
+        # Ensure we use ONLY the data that was signed
+        payload_data = {
+            "edit_type": event["edit_type"],
+            "editor_id": event["editor_id"],
+            "timestamp": event["timestamp"],
+            "metadata": event["metadata"],
+            "previous_hash": event["previous_hash"]
+        }
+        # Recreate the canonical JSON string used for the original signing
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        return payload_str.encode()
+
+    def verify_chain(self, public_key_map: Dict[str, ed25519.Ed25519PublicKey]) -> bool:
+        """
+        Verify the integrity and linkage of the entire provenance chain.
+
+        Args:
+            public_key_map: A dictionary mapping 'editor_id' (or 'device_id'
+                            for the original anchor) to its Public Key object.
+
+        Returns:
+            Boolean indicating if chain verification succeeded (True = Tamper-Proof).
+        """
+        current_hash_link = self.anchor_id  # Start with the original anchor ID
+
+        for i, event in enumerate(self.edit_chain):
+            # 1. VERIFY HASH LINKAGE
+            # Check if the event correctly links back to the previous event (or anchor)
+            if event.get("previous_hash") != current_hash_link:
+                print(f"FAIL: Hash linkage broken at event index {i}. Expected: {current_hash_link[:8]}..., Found: {event.get('previous_hash', 'None')[:8]}...")
+                return False
+
+            # 2. VERIFY SIGNATURE INTEGRITY
+            editor_id = event.get("editor_id")
+            public_key = public_key_map.get(editor_id)
+
+            if not public_key:
+                print(f"FAIL: Public key not found for editor: {editor_id}")
+                return False
+
+            try:
+                # Re-generate the signed payload
+                payload = self._get_event_hashable_payload(event)
+                signature = bytes.fromhex(event["signature"])
+                
+                # Cryptographically verify the signature
+                public_key.verify(signature, payload)
+                
+            except (InvalidSignature, ValueError) as e:
+                print(f"FAIL: Invalid signature detected for event index {i}. Error: {e}")
+                return False
+            
+            # 3. UPDATE CHAIN LINKAGE (SUCCESS)
+            # The current event's unique ID becomes the expected 'previous_hash' for the next event
+            current_hash_link = event.get("event_id")
+
+        # If the loop completes without returning False, the chain is valid.
+        return True
+# ... (inside main function) ...
+
+# Layer 2: Track Provenance
+print("\n2. Tracking Provenance...")
+tracker = ProvenanceTracker(anchor["anchor_id"])
+
+# Assuming the editor_001 uses the same key as the camera (for simplicity)
+# In a real system, you'd look up editor_001's key
+editor_key = private_key 
+
+tracker.add_edit("color_correction", "editor_001", 
+                 {"adjustment": "exposure+0.3"}, 
+                 editor_key)
+
+tracker.add_edit("crop", "editor_001", 
+                 {"dimensions": "1920x1080"}, 
+                 editor_key)
+
+# ...
+
+# NEW STEP: Verify the Provenance Chain
+print("\n4. Verifying Provenance Chain Integrity...")
+
+# Map of entity IDs to their public keys (needed for verification)
+key_map = {
+    "editor_001": public_key,
+    "EXAMPLE_CAMERA_001": public_key # Anchor creator's key might be needed too
+}
+
+is_chain_valid = tracker.verify_chain(key_map)
+
+print(f"    Provenance Chain Valid: {is_chain_valid}")
+if not is_chain_valid:
+    print("    **WARNING: Provenance chain has been tampered with or is incomplete!**")
+
+# Layer 3: Confidence Analysis (continues as before)
+# ...
