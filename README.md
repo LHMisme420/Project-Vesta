@@ -423,3 +423,16 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Add this static method to the AnchorSeedGenerator class:
+
+@staticmethod
+def verify_anchor_signature(anchor: Dict[str, Any], public_key: ed25519.Ed25519PublicKey) -> bool:
+    """Verifies the signature of the original Anchor object."""
+    try:
+        payload_data = anchor["payload"]
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        signature = bytes.fromhex(anchor["signature"])
+        public_key.verify(signature, payload_str.encode())
+        return True
+    except (InvalidSignature, KeyError, ValueError):
+        return False
