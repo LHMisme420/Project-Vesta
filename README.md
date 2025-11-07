@@ -889,3 +889,165 @@ if __name__ == "__main__":
     else:
         # Run quick demo by default
         main()
+# ==================== COMPLETED TEST SUITE ====================
+
+import pytest 
+import copy
+from cryptography.exceptions import InvalidSignature
+
+class TestVestaSystem:
+    """Comprehensive test suite for Project Vesta components (v1.2)"""
+
+    @pytest.fixture
+    def setup_keys_and_generator(self):
+        private_key, public_key = generate_keypair()
+        generator = AnchorSeedGenerator("TEST_CAMERA", private_key)
+        return private_key, public_key, generator
+
+    def test_anchor_creation_and_verification(self, setup_keys_and_generator):
+        """Test Anchor creation, its P-Hash, and its signature verification."""
+        _, public_key, generator = setup_keys_and_generator
+        test_data = b"image_data_A_12345"
+        anchor = generator.create_truth_anchor(test_data, {"test": "metadata"})
+        
+        assert "anchor_id" in anchor
+        assert "p_hash" in anchor["payload"]
+        
+        # Test valid signature
+        assert AnchorSeedGenerator.verify_anchor_signature(anchor, public_key)
+        
+        # Test tampered payload (should fail verification)
+        tampered_anchor = copy.deepcopy(anchor)
+        tampered_anchor["payload"]["timestamp"] += 1
+        assert not AnchorSeedGenerator.verify_anchor_signature(tampered_anchor, public_key)
+
+
+    def test_crypto_serialization(self, setup_keys_and_generator):
+        """Test public key serialization and deserialization utility."""
+        _, public_key, _ = setup_keys_and_generator
+        
+        serialized_key = serialize_public_key(public_key)
+        assert isinstance(serialized_key, str)
+        
+        deserialized_key = deserialize_public_key(serialized_key)
+        
+        # Check that the deserialized key can still verify a signature
+        test_message = b"serialization test"
+        private_key, _ = generate_keypair()
+        signature = private_key.sign(test_message)
+        
+        # We need the original private key to sign, so we use the fixture's public key for comparison
+        # Since we can't easily compare the objects, we check if they have the same byte representation
+        assert public_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        ) == deserialized_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        )
+
+    def test_perceptual_hash_comparison(self, setup_keys_and_generator):
+        """Test the P-Hash Hamming distance logic (Layer 1 enhancement)."""
+        _, _, generator = setup_keys_and_generator
+        
+        # 1. Identical data (Distance should be 0.0 or near-zero)
+        data_a = b"perfectly_matching_data_1"
+        hash1 = generator.generate_perceptual_hash(data_a)
+        hash2 = generator.generate_perceptual_hash(data_a)
+        distance_identical = generator.compare_perceptual_hashes(hash1, hash2)
+        assert distance_identical < 0.05 # Should be very close to 0
+
+        # 2. Highly different data (Distance should be close to 0.5)
+        data_b = b"completely_different_data_99"
+        hash_diff = generator.generate_perceptual_hash(data_b)
+        distance_different = generator.compare_perceptual_hashes(hash1, hash_diff)
+        assert distance_different > 0.45 and distance_different < 0.65
+
+        # 3. Slightly modified data (Distance should be small, but greater than identical)
+        data_c = b"perfectly_matching_data_2" # Only one byte difference
+        hash_similar = generator.generate_perceptual_hash(data_c)
+        distance_similar = generator.compare_perceptual_hashes(hash1, hash_similar)
+        assert distance_similar > distance_identical
+        assert distance_similar < 0.2 # Should be low distance
+
+    def test_provenance_chain_integrity(self, setup_keys_and_generator):
+        """Test cryptographic linkage and integrity of the edit chain."""
+        private_key, public_key, generator = setup_keys_and_generator
+        anchor = generator.create_truth_anchor(b"test_data", {})
+        
+        tracker = ProvenanceTracker(anchor["anchor_id"])
+        
+        # Add two edits
+        tracker.add_edit("edit_1", "editor_1", {"note": "A"}, private_key)
+        tracker.add_edit("edit_2", "editor_2", {"note": "B"}, private_key)
+        
+        # Map requires all signing keys
+        key_map = {"editor_1": public_key, "editor_2": public_key, "TEST_CAMERA": public_key}
+        assert tracker.verify_chain(key_map)
+        
+        # Test broken linkage (simulate tampering)
+        tracker_tampered = ProvenanceTracker(anchor["anchor_id"])
+        tracker_tampered.add_edit("edit_3", "editor_1", {"note": "Tampered"}, private_key)
+        
+        # Manually break the chain hash linkage
+        broken_event = copy.deepcopy(tracker.get_provenance_chain()[0])
+        broken_event["previous_hash"] = "0" * 64 
+        tracker_tampered.edit_chain.append(broken_event)
+        
+        assert not tracker_tampered.verify_chain(key_map)
+        
+    def test_nuance_score_calculation(self):
+        """Test nuance scoring logic and penalty application."""
+        # Base cases
+        assert NuanceCalculator.calculate_nuance_score([], False) == 0.3
+        assert NuanceCalculator.calculate_nuance_score([], True) == 1.0
+        
+        # Penalties
+        edits = [
+            {"edit_type": "filter_apply", "metadata": {}},    # -0.05
+            {"edit_type": "ai_generate", "metadata": {}},     # -0.20
+            {"edit_type": "deepfake_swap", "metadata": {}}    # -0.20
+        ]
+        score = NuanceCalculator.calculate_nuance_score(edits, True)
+        # Expected: 1.0 - 0.05 - 0.20 - 0.20 = 0.55
+        assert score == pytest.approx(0.55)
+
+
+    def test_confidence_engine_logic(self, setup_keys_and_generator):
+        """Test the layered scoring and P-Hash boost logic."""
+        private_key, public_key, generator = setup_keys_and_generator
+        
+        # 1. ANCHORED TEST (Low Risk)
+        anchored_analysis = ConfidenceEngine().analyze_media(
+            media_url="url",
+            metadata={"vesta_anchor_id": "abc", "profit_correlation": 0.01},
+            provenance_chain=[{"edit_type": "filter"}],
+            new_media_raw_data=b"test"
+        )
+        assert anchored_analysis["risk_level"] == "low"
+        assert anchored_analysis["components"]["has_truth_anchor"] == True
+
+        # 2. UNANCHORED + P-HASH MATCH TEST (Medium/Low Risk)
+        # We need an original hash to test the boost
+        original_hash = generator.generate_perceptual_hash(b"original_media")
+        similar_media = b"original_medim" # Slight change
+        
+        unanchored_phash_test = ConfidenceEngine().analyze_media(
+            media_url="url",
+            metadata={"original_p_hash": original_hash},
+            provenance_chain=[],
+            new_media_raw_data=similar_media # Pass raw data for p-hash calculation
+        )
+        # Check P-Hash confidence component is present and score is boosted (p_hash_confidence > 0.7)
+        assert "p_hash_confidence" in unanchored_phash_test["components"]
+        assert unanchored_phash_test["confidence_score"] > 0.7 
+        assert "High P-Hash similarity" in unanchored_phash_test["explanation"]
+        
+        # 3. HIGH PROFIT PENALTY TEST (Score should be lower due to 0.06 profit flag)
+        high_profit_analysis = ConfidenceEngine().analyze_media(
+            media_url="url",
+            metadata={"profit_correlation": 0.06}, # Above 0.05 threshold
+            provenance_chain=[],
+            new_media_raw_data=b"test"
+        )
+        assert high_profit_analysis["components"]["profit_correlation_flag"] == True
