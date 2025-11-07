@@ -1,3 +1,55 @@
+pip install cryptography numpy torch
+from vesta_core import AnchorSeedGenerator, ProvenanceTracker, ConfidenceEngine, generate_keypair
+
+# Setup
+private_key, public_key = generate_keypair()
+generator = AnchorSeedGenerator("CAMERA_001", private_key)
+
+# Create cryptographic anchor
+anchor = generator.create_truth_anchor(
+    b"your_media_data", 
+    {"format": "JPEG", "resolution": "1920x1080"}
+)
+
+# Track edits
+tracker = ProvenanceTracker(anchor["anchor_id"])
+tracker.add_edit("color_correction", "editor_1", {"adjustment": "brightness+10"}, private_key)
+
+# Get confidence score
+engine = ConfidenceEngine()
+analysis = engine.analyze_media(
+    "https://example.com/media.jpg",
+    {"vesta_anchor_id": anchor["anchor_id"]},
+    tracker.get_provenance_chain()
+)
+
+print(f"Confidence: {analysis['confidence_score']}")
+print(f"Risk Level: {analysis['risk_level']}")
+generator = AnchorSeedGenerator("DEVICE_ID", private_key)
+anchor = generator.create_truth_anchor(raw_data, metadata)
+tracker = ProvenanceTracker(anchor_id)
+tracker.add_edit("edit_type", "editor_id", metadata, private_key)
+is_valid = tracker.verify_chain(public_key_map)
+engine = ConfidenceEngine()
+analysis = engine.analyze_media(url, metadata, provenance_chain)
+{
+  "confidence_score": 0.852,
+  "risk_level": "low",
+  "recommendation": "trust_with_context",
+  "explanation": "Anchored media: Good Integrity - Minor cosmetic edits",
+  "components": {
+    "has_truth_anchor": true,
+    "ai_confidence": 0.894,
+    "community_consensus": 0.923,
+    "nuance_score": 0.800,
+    "edit_count": 3,
+    "profit_correlation_flag": false,
+    "profit_correlation_value": 0.03
+  }
+}python -m pytest vesta_tests.py -v
+similarity = generator.compare_perceptual_hashes(hash1, hash2)
+# Returns 0.0 (identical) to 1.0 (completely different)
+is_valid = AnchorSeedGenerator.verify_anchor_signature(anchor, public_key)
 """ 
 Project Vesta - Enhanced All-in-One Core Script (Layer 1, 2, 3) v1.1 
 Consolidated media authenticity system with cryptographic provenance tracking 
