@@ -1064,3 +1064,73 @@ def main():
 
 if __name__ == "__main__":
     main()
+# --- ENHANCEMENT: Key Serialization/Deserialization ---
+
+def serialize_public_key(public_key: ed25519.Ed25519PublicKey) -> str:
+    """Serializes a public key to a hex string for storage/transport."""
+    return public_key.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    ).hex()
+
+def deserialize_public_key(public_key_hex: str) -> ed25519.Ed25519PublicKey:
+    """Deserializes a hex string back into a public key object."""
+    return ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
+    # --- ENHANCEMENT: Perceptual Hash Distance ---
+
+# Add this method to AnchorSeedGenerator
+def compare_perceptual_hashes(self, p_hash_a: str, p_hash_b: str) -> float:
+    """
+    Compares two p-hashes and returns a similarity score (distance).
+    0.0 = identical; 1.0 = completely different.
+    """
+    if len(p_hash_a) != len(p_hash_b):
+        return 1.0 
+    
+    # Calculate Hamming distance (XOR and count set bits)
+    # Convert hex strings to integers for bitwise operations
+    try:
+        a_int = int(p_hash_a, 16)
+        b_int = int(p_hash_b, 16)
+    except ValueError:
+        return 1.0 # Handle non-hex data
+        
+    diff = a_int ^ b_int
+    
+    # Count set bits in the difference
+    distance = bin(diff).count('1')
+    
+    # Normalize by the total number of bits (hash length * 4 bits/char)
+    total_bits = len(p_hash_a) * 4
+    return distance / total_bits
+    # --- ENHANCEMENT: Confidence Engine Logic Update (Simplified) ---
+# Assuming AnchorSeedGenerator.compare_perceptual_hashes is available.
+
+def analyze_media(self, media_url: str, new_media_raw_data: bytes, metadata: Dict[str, Any], 
+                 provenance_chain: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    
+    # ... (existing setup code) ...
+    
+    # 1. P-Hash Calculation (Requires a generator instance for the method)
+    # This requires passing the generator or creating a mock one in the engine.
+    # For simplicity, assume the comparison logic is imported/available here:
+    
+    original_p_hash = metadata.get('original_p_hash')
+    
+    if original_p_hash and not has_anchor:
+        # Generate hash for the media being analyzed
+        current_p_hash = AnchorSeedGenerator().generate_perceptual_hash(new_media_raw_data)
+        
+        # Assume compare_perceptual_hashes is available
+        p_hash_distance = compare_perceptual_hashes(original_p_hash, current_p_hash)
+        
+        # Convert distance (0=good, 1=bad) to a confidence measure (1=good, 0=bad)
+        p_hash_confidence = max(0.0, 1.0 - p_hash_distance) 
+        
+        # Apply the significance threshold (e.g., if highly similar)
+        if p_hash_distance < P_HASH_SIGNIFICANCE_THRESHOLD:
+            # Boost score based on P-Hash match, even without anchor.
+            final_score = (final_score * 0.7) + (p_hash_confidence * 0.3)
+            explanation = "Unanchored media - High P-Hash similarity to known original."
+        
+    # ... (rest of the existing risk/recommendation logic) ...
