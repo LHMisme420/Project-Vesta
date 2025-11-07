@@ -641,3 +641,87 @@ def test_verify_tamper(self):
 - Layer 3: Weighted confidence scoring.
 - Tests: 80% coverage on core.
 - Docs: Quickstart + architecture diagram.
+# =======================================================
+# Project Vesta - Layer 1: The Cryptographic Truth Anchor
+# Purpose: Generates the immutable digital birth certificate (Anchor ID)
+# Status: UPDATED with Wavelet Enhancement for Perceptual Hashing
+# =======================================================
+
+import hashlib
+import time
+import json
+import numpy as np # Used for simulated wavelet transform
+from typing import Dict, Any
+from cryptography.hazmat.primitives.asymmetric import ed25519
+
+
+class AnchorSeedGenerator:
+    """Creates a verifiable, signed Anchor for a piece of media."""
+    
+    def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
+        self.device_id = device_id
+        self.private_key = private_key
+        
+    def generate_perceptual_hash(self, raw_data: bytes) -> str:
+        """
+        Wavelet-Enhanced Perceptual Hash (W-PHash).
+        Uses wavelet transform coefficients to improve resilience against
+        AI-driven alterations (e.g., slight noise injection or compression).
+        
+        This mock uses numpy for a conceptual demonstration.
+        """
+        timestamp_nonce = str(time.time_ns()).encode()
+        combined_data = raw_data + timestamp_nonce
+        
+        # 1. Simulate data conversion and wavelet extraction
+        # In production, this extracts low-frequency wavelet coefficients.
+        try:
+            data_array = np.frombuffer(combined_data[:1024], dtype=np.uint8)
+            # Simple average of coefficients as a hash base
+            feature_vector = np.mean(data_array.reshape(-1, 32), axis=0) 
+        except ValueError:
+            # Fallback for small data packets
+            feature_vector = np.array([hashlib.sha1(combined_data).hexdigest()[:16]]) 
+
+        # 2. Hash the compact feature vector
+        hashable_data = str(feature_vector).encode('utf-8')
+        return hashlib.sha256(hashable_data).hexdigest()
+
+    def create_truth_anchor(self, raw_data: bytes, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Main function to generate the signed Anchor object.
+        """
+        timestamp = int(time.time())
+        perceptual_hash = self.generate_perceptual_hash(raw_data)
+        
+        # Create payload for signing
+        payload_data = {
+            "p_hash": perceptual_hash,
+            "device_id": self.device_id,
+            "timestamp": timestamp,
+            "metadata": metadata
+        }
+        
+        # Convert payload to canonical JSON string for consistent signing
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        signature = self.private_key.sign(payload_str.encode())
+        
+        # Generate anchor ID from signature
+        anchor_id = hashlib.sha256(signature).hexdigest()
+
+        return {
+            "anchor_id": anchor_id,
+            "payload": payload_data,
+            "signature": signature.hex(),
+            "version": "1.0"
+        }
+
+    def verify_anchor(self, anchor_data: Dict[str, Any], public_key: ed25519.Ed25519PublicKey) -> bool:
+        """Verify the integrity of an anchor."""
+        try:
+            payload_str = json.dumps(anchor_data["payload"], sort_keys=True, separators=(',', ':'))
+            signature = bytes.fromhex(anchor_data["signature"])
+            public_key.verify(signature, payload_str.encode())
+            return True
+        except Exception:
+            return False
