@@ -1,286 +1,3 @@
-# 🛡️ Project Vesta
-# 
-    provenance = tracker.get_provenance_chain()
-    print(f"   Edit events: {len(provenance)}")
-    
-# --- NEW STEP 4 ---
-    # Layer 4: Cryptographic Verification (Testing the Provenance Chain)
-    print("\n4. Verifying Provenance Chain Integrity...")
-
-    # In a real system, public keys would be retrieved from a decentralized registry.
-    # For this example, we assume the camera and editor use the same key.
-    key_map = {
-        # This key is needed to verify the edit signatures
-        "editor_001": public_key, 
-        # Include the camera/anchor public key as a best practice
-        "EXAMPLE_CAMERA_001": public_key 
-    }
-
-    is_chain_valid = tracker.verify_chain(key_map)
-
-    print(f"   Provenance Chain Valid: {is_chain_valid}")
-    if not is_chain_valid:
-        print("   **WARNING: Provenance chain verification FAILED. Media may be tampered!**")
-
-# --- (Existing Layer 3 follows, now labeled as 5) ---
-    # Layer 3: Confidence Analysis
-    print("\n5. Confidence Analysis...")
-    engine = ConfidenceEngine()
-# ... (rest of the ConfidenceEngine analysis remains the same) ...
-**Cryptographic Truth Anchor System for Media Authenticity**
-
-Project Vesta is a modular framework for generating, verifying, and scoring the integrity of digital media. It creates cryptographic birth certificates (anchors), tracks edit provenance, and calculates nuanced integrity scores—ensuring trust in every pixel.
-
----
-
-## 📦 Installation
-
-```bash
-git clone https://github.com/LHMISME420/Project-Vesta.git
-cd Project-Vesta
-pip install -e .
-                                     Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-   [Standard Apache 2.0 license text continues...]
-   # Project Vesta - Cryptographic Truth Anchor System
-
-> **Immutable Digital Birth Certificates for Media Content**
-
-A three-layer protocol for creating verifiable authenticity proofs for digital media, combating misinformation through cryptographic truth anchors.
-
-## 🏗️ Architecture
-
-| Layer | Purpose | Key Feature |
-|-------|---------|-------------|
-| **1. Truth Anchor** | Creates immutable media birth certificates | Cryptographic signing + perceptual hashing |
-| **2. Provenance Tracker** | Tracks verifiable edit history | Nuance scoring + timeline visualization |
-| **3. Immune System** | Calculates confidence scores | AI + community consensus |
-
-## 🚀 Quick Start
-
-```bash
-# Clone repository
-git clone https://github.com/LHMISME420/Project-Vesta.git
-cd Project-Vesta
-
-# Install dependencies
-pip install -e .
-
-# Run examples
-python examples/basic_usage.py
-from vesta.layer1_anchor import AnchorSeedGenerator
-from cryptography.hazmat.primitives.asymmetric import ed25519
-
-# Generate device key
-private_key = ed25519.Ed25519PrivateKey.generate()
-generator = AnchorSeedGenerator("CAMERA_001", private_key)
-
-# Create anchor for media
-anchor = generator.create_truth_anchor(
-    b"raw_media_data_here",
-    {"file_type": "JPEG", "resolution": "4K"}
-)from vesta.layer2_provenance import ProvenanceTracker
-
-tracker = ProvenanceTracker(anchor["anchor_id"])
-tracker.add_edit("color_correction", "editor_001", {"adjustment": "exposure+0.5"})
-provenance_data = tracker.get_provenance_chain()
-
-### 3. requirements.txt
-```txt
-cryptography>=41.0.0
-Pillow>=10.0.0
-numpy>=1.24.0
-opencv-python>=4.8.0
-web3>=6.0.0
-requests>=2.31.0
-pytest>=7.0.0
-[build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "project-vesta"
-version = "0.1.0"
-description = "Cryptographic Truth Anchor System for Media Authenticity"
-authors = [
-    {name = "Vesta Contributors", email = "contributors@vesta.truth"},
-]
-readme = "README.md"
-license = {text = "Apache-2.0"}
-requires-python = ">=3.8"
-dependencies = [
-    "cryptography>=41.0.0",
-    "Pillow>=10.0.0",
-    "numpy>=1.24.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-]
-
-[project.urls]
-"Homepage" = "https://github.com/your-username/Project-Vesta"
-"Documentation" = "https://vesta.truth/docs"
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-
-# Virtual environments
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
-*.log
-
-# Media files (should be handled externally)
-*.jpg
-*.png
-*.mp4
-"""
-Project Vesta - Cryptographic Truth Anchor System
-"""
-
-__version__ = "0.1.0"
-__author__ = "Vesta Contributors"
-__license__ = "Apache 2.0"
-
-from vesta.layer1_anchor import AnchorSeedGenerator
-from vesta.layer2_provenance import ProvenanceTracker
-from vesta.layer3_immune_system import ConfidenceEngine
-
-__all__ = ["AnchorSeedGenerator", "ProvenanceTracker", "ConfidenceEngine"]
-"""
-Project Vesta - Layer 1: The Cryptographic Truth Anchor
-Purpose: Generates the immutable digital birth certificate (Anchor ID)
-"""
-
-import hashlib
-import time
-import json
-from typing import Dict, Any
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ed25519
-
-
-class AnchorSeedGenerator:
-    """Creates a verifiable, signed Anchor for a piece of media."""
-    
-    def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
-        self.device_id = device_id
-        self.private_key = private_key
-        
-    def generate_perceptual_hash(self, raw_data: bytes) -> str:
-        """
-        Enhanced perceptual hash with timestamp nonce for uniqueness.
-        In production, this would use AI-powered perceptual hashing.
-        """
-        timestamp_nonce = str(time.time_ns()).encode()
-        combined_data = raw_data + timestamp_nonce
-        return hashlib.sha256(combined_data).hexdigest()
-
-    def create_truth_anchor(self, raw_data: bytes, metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Main function to generate the signed Anchor object.
-        
-        Args:
-            raw_data: The raw media data bytes
-            metadata: Dictionary of media metadata
-            
-        Returns:
-            Dictionary containing anchor_id, payload, and signature
-        """
-        timestamp = int(time.time())
-        perceptual_hash = self.generate_perceptual_hash(raw_data)
-        
-        # Create payload for signing
-        payload_data = {
-            "p_hash": perceptual_hash,
-            "device_id": self.device_id,
-            "timestamp": timestamp,
-            "metadata": metadata
-        }
-        
-        # Convert payload to canonical JSON string for consistent signing
-        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
-        signature = self.private_key.sign(payload_str.encode())
-        
-        # Generate anchor ID from signature
-        anchor_id = hashlib.sha256(signature).hexdigest()
-
-        return {
-            "anchor_id": anchor_id,
-            "payload": payload_data,
-            "signature": signature.hex(),
-            "version": "1.0"
-        }
-
-    def verify_anchor(self, anchor_data: Dict[str, Any], public_key: ed25519.Ed25519PublicKey) -> bool:
-        """
-        Verify the integrity of an anchor.
-        
-        Args:
-            anchor_data: The anchor data to verify
-            public_key: The public key for verification
-            
-        Returns:
-            Boolean indicating if verification succeeded
-        """
-        try:
-            payload_str = json.dumps(anchor_data["payload"], sort_keys=True, separators=(',', ':'))
-            signature = bytes.fromhex(anchor_data["signature"])
-            public_key.verify(signature, payload_str.encode())
-            return True
-        except Exception:
-            return False
-"""
-Cryptographic utilities for Project Vesta
-"""
-
-from cryptography.hazmat.primitives.asymmetric import ed25519
-from cryptography.hazmat.primitives import serialization
-
-
-def generate_keypair():
-    """Generate a new Ed25519 keypair for device signing."""
-    private_key = ed25519.Ed25519PrivateKey.generate()
-    public_key = private_key.public_key()
-    return private_key, public_key
-
-
-def private_key_to_bytes(private_key: ed25519.Ed25519PrivateKey) -> bytes:
-    """Serialize private key to bytes."""
-    return private_key.private_bytes(
-        encoding=serialization.Encoding.Raw,
-        format=serialization.PrivateFormat.Raw,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-
-
-def bytes_to_private_key(key_bytes: bytes) -> ed25519.Ed25519PrivateKey:
-    """Load private key from bytes."""
-    return ed25519.Ed25519PrivateKey.from_private_bytes(key_bytes)
 """
 Project Vesta - Layer 2: Provenance Tracker
 Purpose: Tracks and verifies the edit history of media files
@@ -290,9 +7,9 @@ import hashlib
 import time
 import json
 from typing import List, Dict, Any
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ed25519
-
+from cryptography.exceptions import InvalidSignature
+# Note: The original file had a placeholder for verify_chain. This is the complete version.
 
 class ProvenanceTracker:
     """Tracks the complete edit history of a media file."""
@@ -305,19 +22,10 @@ class ProvenanceTracker:
                  private_key: ed25519.Ed25519PrivateKey) -> str:
         """
         Add a new edit event to the provenance chain.
-        
-        Args:
-            edit_type: Type of edit (crop, filter, enhance, etc.)
-            editor_id: ID of the editor/software
-            edit_metadata: Detailed metadata about the edit
-            private_key: Editor's private key for signing
-            
-        Returns:
-            Edit event ID
         """
         timestamp = int(time.time())
         
-        # Create edit event
+        # Create edit event payload (WHAT IS SIGNED)
         edit_event = {
             "edit_type": edit_type,
             "editor_id": editor_id,
@@ -326,11 +34,11 @@ class ProvenanceTracker:
             "previous_hash": self._get_chain_tip_hash()
         }
         
-        # Sign the edit event
+        # Sign the edit event payload
         event_str = json.dumps(edit_event, sort_keys=True, separators=(',', ':'))
         signature = private_key.sign(event_str.encode())
         
-        # Create complete signed event
+        # Create complete signed event (WHAT IS SAVED)
         signed_event = {
             **edit_event,
             "signature": signature.hex(),
@@ -349,192 +57,83 @@ class ProvenanceTracker:
     def get_provenance_chain(self) -> List[Dict[str, Any]]:
         """Get the complete provenance chain."""
         return self.edit_chain.copy()
-    
-    def verify_chain(self, anchor_public_key: ed25519.Ed25519PublicKey) -> bool:
-        """
-        Verify the integrity of the entire provenance chain.
-        
-        Args:
-            anchor_public_key: Public key of the original anchor creator
-            
-        Returns:
-            Boolean indicating if chain verification succeeded
-        """
-        # Implementation would verify each signature in the chain
-        # This is a simplified version
-        return len(self.edit_chain) > 0  # Placeholder
-"""
-Nuance scoring system for media integrity assessment
-"""
 
-from typing import List, Dict, Any
-
-
-class NuanceCalculator:
-    """Calculates reality nuance scores based on provenance data."""
-    
-    @staticmethod
-    def calculate_nuance_score(provenance_chain: List[Dict[str, Any]], 
-                              has_original_anchor: bool = True) -> float:
+    def _get_event_hashable_payload(self, event: Dict[str, Any]) -> bytes:
         """
-        Calculate a nuanced integrity score (0.0 to 1.0).
-        
-        Args:
-            provenance_chain: List of edit events
-            has_original_anchor: Whether the media has a truth anchor
-            
-        Returns:
-            Float between 0.0 and 1.0 representing integrity
+        Recreates the canonical, hashable payload string for signing verification.
         """
-        if not has_original_anchor:
-            return 0.3  # Low score for unanchored media
-        
-        base_score = 1.0
-        num_edits = len(provenance_chain)
-        
-        # Penalize based on number of edits (simplified)
-        edit_penalty = min(0.5, num_edits * 0.1)
-        base_score -= edit_penalty
-        
-        # Consider edit types (in production, this would be more sophisticated)
-        for event in provenance_chain:
-            edit_type = event.get("edit_type", "")
-            if "ai_generate" in edit_type.lower() or "deepfake" in edit_type.lower():
-                base_score -= 0.2
-            elif "filter" in edit_type.lower() or "color" in edit_type.lower():
-                base_score -= 0.05
-        
-        return max(0.1, min(1.0, base_score))
-    
-    @staticmethod
-    def get_nuance_description(score: float) -> str:
-        """Get human-readable description of nuance score."""
-        if score >= 0.9:
-            return "High Integrity - Minimal alterations detected"
-        elif score >= 0.7:
-            return "Good Integrity - Minor cosmetic edits"
-        elif score >= 0.5:
-            return "Moderate Integrity - Multiple edits, verify context"
-        elif score >= 0.3:
-            return "Low Integrity - Significant alterations"
-        else:
-            return "Very Low Integrity - Requires careful verification"
-"""
-Project Vesta - Layer 3: Decentralized Immune System
-Purpose: Calculates confidence scores using AI and community consensus
-"""
-
-import random
-from typing import Dict, Any, List
-from ...layer2_provenance.nuance_calculator import NuanceCalculator
-
-
-class ConfidenceEngine:
-    """Combines multiple signals to calculate final confidence scores."""
-    
-    def __init__(self):
-        self.ai_models = ["temporal_analysis", "spatial_analysis", "frequency_analysis"]
-        self.community_weights = {"expert": 0.6, "crowd": 0.3, "ai_consensus": 0.1}
-    
-    def analyze_media(self, media_url: str, metadata: Dict[str, Any], 
-                     provenance_chain: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Comprehensive media analysis combining all verification signals.
-        
-        Args:
-            media_url: URL or identifier of the media
-            metadata: Media metadata including potential anchor
-            provenance_chain: Optional provenance history
-            
-        Returns:
-            Comprehensive confidence analysis
-        """
-        has_anchor = 'vesta_anchor_id' in metadata
-        provenance_chain = provenance_chain or []
-        
-        # Calculate base scores
-        ai_confidence = self._get_ai_confidence(media_url)
-        community_consensus = self._get_community_consensus(media_url)
-        nuance_score = NuanceCalculator.calculate_nuance_score(provenance_chain, has_anchor)
-        
-        # Weighted final score
-        if has_anchor:
-            # Anchor exists - heavily weighted toward provenance
-            final_score = (nuance_score * 0.7) + (ai_confidence * 0.2) + (community_consensus * 0.1)
-            explanation = f"Anchored media: {NuanceCalculator.get_nuance_description(nuance_score)}"
-        else:
-            # No anchor - rely on AI and community
-            final_score = (ai_confidence * 0.5) + (community_consensus * 0.5)
-            explanation = "Unanchored media - verification based on AI and community consensus"
-        
-        # Determine risk level
-        if final_score >= 0.8:
-            risk_level = "low"
-            recommendation = "trust_with_context"
-        elif final_score >= 0.6:
-            risk_level = "medium"
-            recommendation = "verify_provenance"
-        else:
-            risk_level = "high"
-            recommendation = "exercise_caution"
-        
-        return {
-            "confidence_score": round(final_score, 3),
-            "risk_level": risk_level,
-            "recommendation": recommendation,
-            "explanation": explanation,
-            "components": {
-                "has_truth_anchor": has_anchor,
-                "ai_confidence": round(ai_confidence, 3),
-                "community_consensus": round(community_consensus, 3),
-                "nuance_score": round(nuance_score, 3),
-                "edit_count": len(provenance_chain)
-            }
+        # Ensure we use ONLY the data that was signed
+        payload_data = {
+            "edit_type": event["edit_type"],
+            "editor_id": event["editor_id"],
+            "timestamp": event["timestamp"],
+            "metadata": event["metadata"],
+            "previous_hash": event["previous_hash"]
         }
-    
-    def _get_ai_confidence(self, media_url: str) -> float:
-        """Get AI model confidence (placeholder implementation)."""
-        # In production, this would run multiple AI detection models
-        return random.uniform(0.7, 0.98)
-    
-    def _get_community_consensus(self, media_url: str) -> float:
-        """Get community verification consensus (placeholder)."""
-        # In production, this would query decentralized verification network
-        return random.uniform(0.8, 0.95)
-"""
-Tests for Layer 1 - Truth Anchor generation
-"""
+        # Recreate the canonical JSON string used for the original signing
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        return payload_str.encode()
 
-import pytest
-from cryptography.hazmat.primitives.asymmetric import ed25519
-from vesta.layer1_anchor import AnchorSeedGenerator, crypto_utils
+    def verify_chain(self, public_key_map: Dict[str, ed25519.Ed25519PublicKey]) -> bool:
+        """
+        Verify the cryptographic integrity and linkage of the entire provenance chain.
 
+        Args:
+            public_key_map: A dictionary mapping 'editor_id' to its Public Key object.
 
-class TestAnchorGeneration:
-    def test_anchor_creation(self):
-        """Test basic anchor creation."""
-        private_key, public_key = crypto_utils.generate_keypair()
-        generator = AnchorSeedGenerator("TEST_DEVICE", private_key)
-        
-        test_data = b"test_media_data"
-        metadata = {"test": True, "file_type": "TEST"}
-        
-        anchor = generator.create_truth_anchor(test_data, metadata)
-        
-        assert "anchor_id" in anchor
-        assert "payload" in anchor
-        assert "signature" in anchor
-        assert anchor["payload"]["device_id"] == "TEST_DEVICE"
-    
-    def test_anchor_verification(self):
-        """Test anchor verification."""
-        private_key, public_key = crypto_utils.generate_keypair()
-        generator = AnchorSeedGenerator("TEST_DEVICE", private_key)
-        
-        anchor = generator.create_truth_anchor(b"test", {})
-        is_valid = generator.verify_anchor(anchor, public_key)
-        
-        assert is_valid == True
+        Returns:
+            Boolean indicating if chain verification succeeded (True = Tamper-Proof).
+        """
+        current_hash_link = self.anchor_id  # Start with the original anchor ID
+
+        for i, event in enumerate(self.edit_chain):
+            # 1. VERIFY HASH LINKAGE (CHAINING)
+            if event.get("previous_hash") != current_hash_link:
+                print(f"FAIL: Hash linkage broken at event index {i}. Expected: {current_hash_link[:8]}...")
+                return False
+
+            # 2. VERIFY SIGNATURE INTEGRITY
+            editor_id = event.get("editor_id")
+            public_key = public_key_map.get(editor_id)
+
+            if not public_key:
+                print(f"FAIL: Public key not found for editor: {editor_id}")
+                return False
+
+            try:
+                payload = self._get_event_hashable_payload(event)
+                signature = bytes.fromhex(event["signature"])
+                public_key.verify(signature, payload)
+                
+            except (InvalidSignature, ValueError) as e:
+                print(f"FAIL: Invalid signature detected for event index {i}. Error: {e}")
+                return False
+            
+            # 3. UPDATE CHAIN LINKAGE (SUCCESS)
+            current_hash_link = event.get("event_id")
+
+        return True
+# vesta/constants.py
+
+# =======================================================
+# Project Vesta - Global Configuration Constants
+# =======================================================
+
+# --- Layer 3: Immune System / Audit Configuration ---
+
+# The maximum acceptable correlation (from -1.0 to 1.0) 
+# between an editor's actions and an external financial profit signal.
+# A low value enforces "Zero-Drift" to combat financially-motivated tampering.
+PROFIT_CORRELATION_MAX: float = 0.05 
+
+# The minimum required system stability or ethical benefit score (from 0.0 to 1.0) 
+# achieved by a proposed edit or reversal. Used by an Auditor to prioritize 
+# changes that make the overall Vesta network more robust and anti-fragile.
+ETHICAL_BENEFIT_MIN: float = 0.7
+
+# A threshold defining what magnitude of perceptual hash change (Layer 1) 
+# is considered a 'significant' alteration.
+P_HASH_SIGNIFICANCE_THRESHOLD: float = 0.40
 """
 Basic usage example for Project Vesta
 """
@@ -542,6 +141,7 @@ Basic usage example for Project Vesta
 from vesta.layer1_anchor import AnchorSeedGenerator, crypto_utils
 from vesta.layer2_provenance import ProvenanceTracker, NuanceCalculator
 from vesta.layer3_immune_system import ConfidenceEngine
+# Note: No need to import vesta/constants here, as the Auditor/Engine would use them internally.
 
 
 def main():
@@ -569,24 +169,41 @@ def main():
     tracker = ProvenanceTracker(anchor["anchor_id"])
     
     # Add some edits
+    editor_key = private_key # Use the same key for this example
+    
     tracker.add_edit("color_correction", "editor_001", 
                     {"adjustment": "exposure+0.3", "white_balance": "auto"}, 
-                    private_key)
+                    editor_key)
     
     tracker.add_edit("crop", "editor_001", 
                     {"dimensions": "1920x1080", "aspect_ratio": "16:9"}, 
-                    private_key)
+                    editor_key)
     
     provenance = tracker.get_provenance_chain()
     print(f"   Edit events: {len(provenance)}")
     
-    # Calculate nuance score
+    # Calculate nuance score (remains Step 2 logic)
     nuance_score = NuanceCalculator.calculate_nuance_score(provenance, True)
     nuance_desc = NuanceCalculator.get_nuance_description(nuance_score)
     print(f"   Nuance Score: {nuance_score} - {nuance_desc}")
     
-    # Layer 3: Confidence Analysis
-    print("\n3. Confidence Analysis...")
+    # --- NEW STEP 4: Cryptographic Verification ---
+    print("\n4. Verifying Provenance Chain Integrity...")
+
+    # Map of entity IDs to their public keys (needed for verification)
+    key_map = {
+        "editor_001": public_key,
+        "EXAMPLE_CAMERA_001": public_key 
+    }
+
+    is_chain_valid = tracker.verify_chain(key_map)
+
+    print(f"   Provenance Chain Valid: {is_chain_valid}")
+    if not is_chain_valid:
+        print("   **WARNING: Provenance chain verification FAILED. Media may be tampered!**")
+        
+    # Layer 3: Confidence Analysis (Now Step 5)
+    print("\n5. Confidence Analysis...")
     engine = ConfidenceEngine()
     
     analysis = engine.analyze_media(
@@ -605,105 +222,78 @@ def main():
 
 if __name__ == "__main__":
     main()
-# Initialize and push to GitHub
-git init
-git add .
-git commit -m "feat: Initial commit - Project Vesta three-layer truth verification system
+    # =================================================================
+# FILE: vesta/constants.py (New File)
+# =================================================================
+# Project Vesta - Global Configuration Constants
 
-- Layer 1: Cryptographic Truth Anchor with Ed25519 signing
-- Layer 2: Provenance Tracker with nuance scoring
-- Layer 3: Decentralized Immune System with AI/community consensus
-- Complete test suite and examples
-- Apache 2.0 license
-- Professional documentation and packaging"
+PROFIT_CORRELATION_MAX: float = 0.05 
+ETHICAL_BENEFIT_MIN: float = 0.7
+P_HASH_SIGNIFICANCE_THRESHOLD: float = 0.40
 
-# Create repository on GitHub first, then:
-git remote add origin https://github.com/your-username/Project-Vesta.git
-git branch -M main
-git push -u origin main
-import numpy as np  # Already in your reqs/env
 
-def generate_perceptual_hash(self, raw_data: bytes) -> str:
-    """
-    DCT-based perceptual hash for images (assumes JPEG bytes).
-    Resilient to minor edits like compression.
-    """
-    # Placeholder: In prod, decode with Pillow/OpenCV
-    # For demo: Simulate 8x8 DCT coeffs from data
-    timestamp_nonce = str(time.time_ns()).encode()
-    combined = np.frombuffer(raw_data + timestamp_nonce, dtype=np.uint8)
-    coeffs = np.fft.dct(combined[:64].reshape(8, 8))  # 8x8 block
-    hash_bits = ''.join('1' if c > np.mean(coeffs) else '0' for c in coeffs.flatten()[:64])
-    return hashlib.sha256(hash_bits.encode()).hexdigest()
-def test_verify_tamper(self):
-    private_key, public_key = generate_keypair()
-    tracker = ProvenanceTracker("test_id")
-    tracker.add_edit("edit", "ed", {"a":1}, private_key)
-    assert tracker.verify_chain(public_key)  # True
-    
-    tracker.edit_chain[0]["previous_hash"] = "fake"
-    assert not tracker.verify_chain(public_key)  # False
-# v0.1.0 - 2025-11-07
-- Initial release: 3-layer truth verification system.
-- Layer 1: Ed25519-anchored media hashing.
-- Layer 2: Signed provenance with full chain verification.
-- Layer 3: Weighted confidence scoring.
-- Tests: 80% coverage on core.
-- Docs: Quickstart + architecture diagram.
-# =======================================================
-# Project Vesta - Layer 1: The Cryptographic Truth Anchor
-# Purpose: Generates the immutable digital birth certificate (Anchor ID)
-# Status: UPDATED with Wavelet Enhancement for Perceptual Hashing
-# =======================================================
-
+# =================================================================
+# FILE: vesta/crypto_utils.py
+# =================================================================
 import hashlib
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
+
+def generate_keypair():
+    """Generate a new Ed25519 keypair for device signing."""
+    private_key = ed25519.Ed25519PrivateKey.generate()
+    public_key = private_key.public_key()
+    return private_key, public_key
+
+def private_key_to_bytes(private_key: ed25519.Ed25519PrivateKey) -> bytes:
+    """Serialize private key to bytes."""
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PrivateFormat.Raw,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+def bytes_to_private_key(key_bytes: bytes) -> ed25519.Ed25519PrivateKey:
+    """Load private key from bytes."""
+    return ed25519.Ed25519PrivateKey.from_private_bytes(key_bytes)
+
+
+# =================================================================
+# FILE: vesta/layer1_anchor.py
+# =================================================================
 import time
 import json
-import numpy as np # Used for simulated wavelet transform
+import numpy as np
 from typing import Dict, Any
 from cryptography.hazmat.primitives.asymmetric import ed25519
-
+from cryptography.hazmat.primitives import hashes # Required for original design, though not used in final impl
 
 class AnchorSeedGenerator:
-    """Creates a verifiable, signed Anchor for a piece of media."""
     
     def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
         self.device_id = device_id
         self.private_key = private_key
         
     def generate_perceptual_hash(self, raw_data: bytes) -> str:
-        """
-        Wavelet-Enhanced Perceptual Hash (W-PHash).
-        Uses wavelet transform coefficients to improve resilience against
-        AI-driven alterations (e.g., slight noise injection or compression).
-        
-        This mock uses numpy for a conceptual demonstration.
-        """
+        """Wavelet-Enhanced Perceptual Hash (Mock Implementation)"""
         timestamp_nonce = str(time.time_ns()).encode()
         combined_data = raw_data + timestamp_nonce
         
-        # 1. Simulate data conversion and wavelet extraction
-        # In production, this extracts low-frequency wavelet coefficients.
         try:
+            # Simulate W-PHash: Hash of a low-frequency feature vector
             data_array = np.frombuffer(combined_data[:1024], dtype=np.uint8)
-            # Simple average of coefficients as a hash base
-            feature_vector = np.mean(data_array.reshape(-1, 32), axis=0) 
+            feature_vector = np.mean(data_array.reshape(-1, 32), axis=0)  
         except ValueError:
-            # Fallback for small data packets
             feature_vector = np.array([hashlib.sha1(combined_data).hexdigest()[:16]]) 
 
-        # 2. Hash the compact feature vector
         hashable_data = str(feature_vector).encode('utf-8')
         return hashlib.sha256(hashable_data).hexdigest()
 
     def create_truth_anchor(self, raw_data: bytes, metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Main function to generate the signed Anchor object.
-        """
+        """Main function to generate the signed Anchor object."""
         timestamp = int(time.time())
         perceptual_hash = self.generate_perceptual_hash(raw_data)
         
-        # Create payload for signing
         payload_data = {
             "p_hash": perceptual_hash,
             "device_id": self.device_id,
@@ -711,11 +301,8 @@ class AnchorSeedGenerator:
             "metadata": metadata
         }
         
-        # Convert payload to canonical JSON string for consistent signing
         payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
         signature = self.private_key.sign(payload_str.encode())
-        
-        # Generate anchor ID from signature
         anchor_id = hashlib.sha256(signature).hexdigest()
 
         return {
@@ -734,22 +321,97 @@ class AnchorSeedGenerator:
             return True
         except Exception:
             return False
-import hashlib
-import time
-import json
-from typing import List, Dict, Any
-from cryptography.hazmat.primitives.asymmetric import ed25519
+
+
+# =================================================================
+# FILE: vesta/layer2_provenance/nuance_calculator.py
+# =================================================================
+from typing import List
+
+class NuanceCalculator:
+    
+    @staticmethod
+    def calculate_nuance_score(provenance_chain: List[Dict[str, Any]], 
+                              has_original_anchor: bool = True) -> float:
+        """Calculate a nuanced integrity score (0.0 to 1.0)."""
+        if not has_original_anchor:
+            return 0.3
+        
+        base_score = 1.0
+        num_edits = len(provenance_chain)
+        
+        edit_penalty = min(0.5, num_edits * 0.1)
+        base_score -= edit_penalty
+        
+        for event in provenance_chain:
+            edit_type = event.get("edit_type", "")
+            if "ai_generate" in edit_type.lower() or "deepfake" in edit_type.lower():
+                base_score -= 0.2
+            elif "filter" in edit_type.lower() or "color" in edit_type.lower():
+                base_score -= 0.05
+        
+        return max(0.1, min(1.0, base_score))
+    
+    @staticmethod
+    def get_nuance_description(score: float) -> str:
+        """Get human-readable description of nuance score."""
+        if score >= 0.9:
+            return "High Integrity - Minimal alterations detected"
+        elif score >= 0.7:
+            return "Good Integrity - Minor cosmetic edits"
+        elif score >= 0.5:
+            return "Moderate Integrity - Multiple edits, verify context"
+        elif score >= 0.3:
+            return "Low Integrity - Significant alterations"
+        else:
+            return "Very Low Integrity - Requires careful verification"
+
+
+# =================================================================
+# FILE: vesta/layer2_provenance.py (UPDATED)
+# =================================================================
 from cryptography.exceptions import InvalidSignature
 
-
 class ProvenanceTracker:
-    # ... (existing __init__, add_edit, _get_chain_tip_hash, get_provenance_chain methods) ...
+    
+    def __init__(self, anchor_id: str):
+        self.anchor_id = anchor_id
+        self.edit_chain: List[Dict[str, Any]] = []
+        
+    def add_edit(self, edit_type: str, editor_id: str, edit_metadata: Dict[str, Any], 
+                 private_key: ed25519.Ed25519PrivateKey) -> str:
+        
+        timestamp = int(time.time())
+        edit_event = {
+            "edit_type": edit_type,
+            "editor_id": editor_id,
+            "timestamp": timestamp,
+            "metadata": edit_metadata,
+            "previous_hash": self._get_chain_tip_hash()
+        }
+        
+        event_str = json.dumps(edit_event, sort_keys=True, separators=(',', ':'))
+        signature = private_key.sign(event_str.encode())
+        
+        signed_event = {
+            **edit_event,
+            "signature": signature.hex(),
+            "event_id": hashlib.sha256(signature).hexdigest()
+        }
+        
+        self.edit_chain.append(signed_event)
+        return signed_event["event_id"]
+    
+    def _get_chain_tip_hash(self) -> str:
+        if not self.edit_chain:
+            return self.anchor_id
+        return self.edit_chain[-1]["event_id"]
+    
+    def get_provenance_chain(self) -> List[Dict[str, Any]]:
+        return self.edit_chain.copy()
 
     def _get_event_hashable_payload(self, event: Dict[str, Any]) -> bytes:
-        """
-        Recreates the canonical, hashable payload string for signing verification.
-        """
-        # Ensure we use ONLY the data that was signed
+        """Recreates the canonical, hashable payload string for signing verification."""
         payload_data = {
             "edit_type": event["edit_type"],
             "editor_id": event["editor_id"],
@@ -757,28 +419,17 @@ class ProvenanceTracker:
             "metadata": event["metadata"],
             "previous_hash": event["previous_hash"]
         }
-        # Recreate the canonical JSON string used for the original signing
         payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
         return payload_str.encode()
 
     def verify_chain(self, public_key_map: Dict[str, ed25519.Ed25519PublicKey]) -> bool:
-        """
-        Verify the integrity and linkage of the entire provenance chain.
-
-        Args:
-            public_key_map: A dictionary mapping 'editor_id' (or 'device_id'
-                            for the original anchor) to its Public Key object.
-
-        Returns:
-            Boolean indicating if chain verification succeeded (True = Tamper-Proof).
-        """
-        current_hash_link = self.anchor_id  # Start with the original anchor ID
+        """Verify the cryptographic integrity and linkage of the entire provenance chain."""
+        current_hash_link = self.anchor_id
 
         for i, event in enumerate(self.edit_chain):
             # 1. VERIFY HASH LINKAGE
-            # Check if the event correctly links back to the previous event (or anchor)
             if event.get("previous_hash") != current_hash_link:
-                print(f"FAIL: Hash linkage broken at event index {i}. Expected: {current_hash_link[:8]}..., Found: {event.get('previous_hash', 'None')[:8]}...")
+                print(f"FAIL: Hash linkage broken at event index {i}.")
                 return False
 
             # 2. VERIFY SIGNATURE INTEGRITY
@@ -790,57 +441,155 @@ class ProvenanceTracker:
                 return False
 
             try:
-                # Re-generate the signed payload
                 payload = self._get_event_hashable_payload(event)
                 signature = bytes.fromhex(event["signature"])
-                
-                # Cryptographically verify the signature
                 public_key.verify(signature, payload)
                 
-            except (InvalidSignature, ValueError) as e:
-                print(f"FAIL: Invalid signature detected for event index {i}. Error: {e}")
+            except (InvalidSignature, ValueError):
+                print(f"FAIL: Invalid signature detected for event index {i}.")
                 return False
             
-            # 3. UPDATE CHAIN LINKAGE (SUCCESS)
-            # The current event's unique ID becomes the expected 'previous_hash' for the next event
+            # 3. UPDATE CHAIN LINKAGE
             current_hash_link = event.get("event_id")
 
-        # If the loop completes without returning False, the chain is valid.
         return True
-# ... (inside main function) ...
 
-# Layer 2: Track Provenance
-print("\n2. Tracking Provenance...")
-tracker = ProvenanceTracker(anchor["anchor_id"])
 
-# Assuming the editor_001 uses the same key as the camera (for simplicity)
-# In a real system, you'd look up editor_001's key
-editor_key = private_key 
+# =================================================================
+# FILE: vesta/layer3_immune_system/confidence_engine.py
+# =================================================================
+import random
+from vesta.layer2_provenance.nuance_calculator import NuanceCalculator
+from vesta.constants import PROFIT_CORRELATION_MAX, ETHICAL_BENEFIT_MIN
 
-tracker.add_edit("color_correction", "editor_001", 
-                 {"adjustment": "exposure+0.3"}, 
-                 editor_key)
+class ConfidenceEngine:
+    """Combines multiple signals to calculate final confidence scores."""
+    
+    def __init__(self):
+        self.ai_models = ["temporal_analysis", "spatial_analysis", "frequency_analysis"]
+        # Example of utilizing constants (Though not used in final scoring formula below)
+        # print(f"Audit Threshold: Max Profit Correlation={PROFIT_CORRELATION_MAX}") 
+        
+    def analyze_media(self, media_url: str, metadata: Dict[str, Any], 
+                     provenance_chain: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Comprehensive media analysis combining all verification signals."""
+        has_anchor = 'vesta_anchor_id' in metadata
+        provenance_chain = provenance_chain or []
+        
+        ai_confidence = self._get_ai_confidence(media_url)
+        community_consensus = self._get_community_consensus(media_url)
+        nuance_score = NuanceCalculator.calculate_nuance_score(provenance_chain, has_anchor)
+        
+        # Weighted final score
+        if has_anchor:
+            final_score = (nuance_score * 0.7) + (ai_confidence * 0.2) + (community_consensus * 0.1)
+            explanation = f"Anchored media: {NuanceCalculator.get_nuance_description(nuance_score)}"
+        else:
+            final_score = (ai_confidence * 0.5) + (community_consensus * 0.5)
+            explanation = "Unanchored media - verification based on AI and community consensus"
+        
+        # Determine risk level
+        if final_score >= 0.8:
+            risk_level = "low"
+            recommendation = "trust_with_context"
+        else:
+            # Check a complex audit rule based on a constant
+            if final_score >= ETHICAL_BENEFIT_MIN: # Example usage of a constant
+                risk_level = "medium"
+                recommendation = "verify_provenance_but_ethically_sound"
+            else:
+                risk_level = "high"
+                recommendation = "exercise_caution"
+        
+        return {
+            "confidence_score": round(final_score, 3),
+            "risk_level": risk_level,
+            "recommendation": recommendation,
+            "explanation": explanation,
+            "components": {
+                "has_truth_anchor": has_anchor,
+                "ai_confidence": round(ai_confidence, 3),
+                "community_consensus": round(community_consensus, 3),
+                "nuance_score": round(nuance_score, 3),
+                "edit_count": len(provenance_chain)
+            }
+        }
+    
+    def _get_ai_confidence(self, media_url: str) -> float:
+        return random.uniform(0.7, 0.98)
+    
+    def _get_community_consensus(self, media_url: str) -> float:
+        return random.uniform(0.8, 0.95)
 
-tracker.add_edit("crop", "editor_001", 
-                 {"dimensions": "1920x1080"}, 
-                 editor_key)
 
-# ...
+# =================================================================
+# FILE: examples/basic_usage.py (Main Runner)
+# =================================================================
+# Simulate imports from the modules defined above
+# NOTE: This section MUST be run separately and relies on the class definitions above.
 
-# NEW STEP: Verify the Provenance Chain
-print("\n4. Verifying Provenance Chain Integrity...")
+def main():
+    print("=== Project Vesta - Basic Usage Example (Integrated) ===\n")
+    
+    # --- Setup ---
+    # Assuming crypto_utils.py is available
+    private_key, public_key = generate_keypair() 
+    generator = AnchorSeedGenerator("EXAMPLE_CAMERA_001", private_key)
+    media_data = b"fake_image_data_xyz_123"
+    metadata = {"file_type": "JPEG", "resolution": "3840x2160"}
+    
+    # 1. Layer 1: Create Truth Anchor
+    print("1. Creating Truth Anchor...")
+    anchor = generator.create_truth_anchor(media_data, metadata)
+    print(f"   Anchor ID: {anchor['anchor_id'][:16]}...")
+    
+    # 2. Layer 2: Track Provenance
+    print("\n2. Tracking Provenance...")
+    tracker = ProvenanceTracker(anchor["anchor_id"])
+    editor_key = private_key
+    
+    tracker.add_edit("color_correction", "editor_001", 
+                    {"adjustment": "exposure+0.3"}, editor_key)
+    tracker.add_edit("crop", "editor_001", 
+                    {"dimensions": "1920x1080"}, editor_key)
+    
+    provenance = tracker.get_provenance_chain()
+    print(f"   Edit events: {len(provenance)}")
+    
+    # 3. Nuance Score
+    nuance_score = NuanceCalculator.calculate_nuance_score(provenance, True)
+    nuance_desc = NuanceCalculator.get_nuance_description(nuance_score)
+    print(f"   Nuance Score: {round(nuance_score, 3)} - {nuance_desc}")
+    
+    # 4. Cryptographic Verification (New Step)
+    print("\n4. Verifying Provenance Chain Integrity...")
+    key_map = {"editor_001": public_key, "EXAMPLE_CAMERA_001": public_key}
 
-# Map of entity IDs to their public keys (needed for verification)
-key_map = {
-    "editor_001": public_key,
-    "EXAMPLE_CAMERA_001": public_key # Anchor creator's key might be needed too
-}
+    is_chain_valid = tracker.verify_chain(key_map)
 
-is_chain_valid = tracker.verify_chain(key_map)
+    print(f"   Provenance Chain Valid: {is_chain_valid}")
+    if not is_chain_valid:
+        print("   **WARNING: Provenance chain verification FAILED. Media may be tampered!**")
+        
+    # 5. Layer 3: Confidence Analysis
+    print("\n5. Confidence Analysis...")
+    engine = ConfidenceEngine()
+    
+    analysis = engine.analyze_media(
+        media_url="https://example.com/media.jpg",
+        metadata={"vesta_anchor_id": anchor["anchor_id"]},
+        provenance_chain=provenance
+    )
+    
+    print(f"   Final Confidence: {analysis['confidence_score']}")
+    print(f"   Risk Level: {analysis['risk_level'].upper()}")
+    print(f"   Recommendation: {analysis['recommendation']}")
+    
+    print("\n=== Example Complete ===")
 
-print(f"    Provenance Chain Valid: {is_chain_valid}")
-if not is_chain_valid:
-    print("    **WARNING: Provenance chain has been tampered with or is incomplete!**")
 
-# Layer 3: Confidence Analysis (continues as before)
-# ...
+if __name__ == "__main__":
+    # You would need to structure the imports correctly in your local environment
+    # to run this successfully.
+    # main() 
+    print("\n***NOTE: To run this code, ensure Python module structure and imports are correct.***")
