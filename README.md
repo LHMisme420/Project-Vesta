@@ -1,5 +1,32 @@
 # 🛡️ Project Vesta
+# ... (Existing Layer 2 code ends here) ...
+    provenance = tracker.get_provenance_chain()
+    print(f"   Edit events: {len(provenance)}")
+    
+# --- NEW STEP 4 ---
+    # Layer 4: Cryptographic Verification (Testing the Provenance Chain)
+    print("\n4. Verifying Provenance Chain Integrity...")
 
+    # In a real system, public keys would be retrieved from a decentralized registry.
+    # For this example, we assume the camera and editor use the same key.
+    key_map = {
+        # This key is needed to verify the edit signatures
+        "editor_001": public_key, 
+        # Include the camera/anchor public key as a best practice
+        "EXAMPLE_CAMERA_001": public_key 
+    }
+
+    is_chain_valid = tracker.verify_chain(key_map)
+
+    print(f"   Provenance Chain Valid: {is_chain_valid}")
+    if not is_chain_valid:
+        print("   **WARNING: Provenance chain verification FAILED. Media may be tampered!**")
+
+# --- (Existing Layer 3 follows, now labeled as 5) ---
+    # Layer 3: Confidence Analysis
+    print("\n5. Confidence Analysis...")
+    engine = ConfidenceEngine()
+# ... (rest of the ConfidenceEngine analysis remains the same) ...
 **Cryptographic Truth Anchor System for Media Authenticity**
 
 Project Vesta is a modular framework for generating, verifying, and scoring the integrity of digital media. It creates cryptographic birth certificates (anchors), tracks edit provenance, and calculates nuanced integrity scores—ensuring trust in every pixel.
