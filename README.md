@@ -709,3 +709,196 @@ if __name__ == '__main__':
    Profit Value: 0.060
 
 === Enhanced Example Complete ===
+"""
+Pytest suite for Project Vesta Layer 2: ProvenanceTracker Verification
+Tests the critical verify_chain method for cryptographic integrity and linkage.
+"""
+
+import pytest
+import copy
+import hashlib
+import json
+import time
+from typing import Dict, Any
+
+# --- Import/Setup Mock Dependencies from the Consolidated Script ---
+# NOTE: In a real environment, you would import these from their respective files.
+# For this consolidated test, we define the necessary tools/classes.
+
+class MockCryptoUtils:
+    """Mock for generate_keypair used by the fixture."""
+    @staticmethod
+    def generate_keypair():
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+        return private_key, public_key
+
+class ProvenanceTracker:
+    # --- The exact ProvenanceTracker class from your consolidated script ---
+    # To run this test file independently, you MUST paste the full class here.
+
+    def __init__(self, anchor_id: str):
+        self.anchor_id = anchor_id
+        self.edit_chain: List[Dict[str, Any]] = []
+        
+    def _get_chain_tip_hash(self) -> str:
+        if not self.edit_chain: return self.anchor_id
+        return self.edit_chain[-1]["event_id"]
+
+    def add_edit(self, edit_type: str, editor_id: str, edit_metadata: Dict[str, Any], 
+                 private_key: ed25519.Ed25519PrivateKey) -> str:
+        timestamp = int(time.time())
+        edit_event = {
+            "edit_type": edit_type, "editor_id": editor_id, "timestamp": timestamp,
+            "metadata": edit_metadata, "previous_hash": self._get_chain_tip_hash()
+        }
+        event_str = json.dumps(edit_event, sort_keys=True, separators=(',', ':'))
+        signature = private_key.sign(event_str.encode())
+        signed_event = {
+            **edit_event, "signature": signature.hex(), 
+            "event_id": hashlib.sha256(signature).hexdigest()
+        }
+        self.edit_chain.append(signed_event)
+        return signed_event["event_id"]
+    
+    def get_provenance_chain(self) -> List[Dict[str, Any]]:
+        return self.edit_chain.copy()
+
+    def _get_event_hashable_payload(self, event: Dict[str, Any]) -> bytes:
+        payload_data = {
+            "edit_type": event["edit_type"], "editor_id": event["editor_id"], 
+            "timestamp": event["timestamp"], "metadata": event["metadata"], 
+            "previous_hash": event["previous_hash"]
+        }
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        return payload_str.encode()
+
+    def verify_chain(self, public_key_map: Dict[str, ed25519.Ed25519PublicKey]) -> bool:
+        """Verify the cryptographic integrity and linkage of the entire provenance chain."""
+        from cryptography.exceptions import InvalidSignature
+        current_hash_link = self.anchor_id
+        for i, event in enumerate(self.edit_chain):
+            # 1. HASH LINKAGE
+            if event.get("previous_hash") != current_hash_link:
+                # print(f"FAIL: Hash linkage broken at event index {i}.") # Removed print for clean test
+                return False
+            # 2. SIGNATURE INTEGRITY
+            editor_id = event.get("editor_id")
+            public_key = public_key_map.get(editor_id)
+            if not public_key:
+                # print(f"FAIL: Public key not found for editor: {editor_id}") # Removed print for clean test
+                return False
+            try:
+                payload = self._get_event_hashable_payload(event)
+                signature = bytes.fromhex(event["signature"])
+                public_key.verify(signature, payload)
+            except (InvalidSignature, ValueError):
+                # print(f"FAIL: Invalid signature detected for event index {i}.") # Removed print for clean test
+                return False
+            # 3. UPDATE CHAIN LINKAGE
+            current_hash_link = event.get("event_id")
+        return True
+
+
+# =======================================================
+# 🛠️ Pytest Fixtures
+# =======================================================
+
+@pytest.fixture
+def crypto_keys():
+    """Generates and returns two distinct key pairs."""
+    key1_priv, key1_pub = MockCryptoUtils.generate_keypair()
+    key2_priv, key2_pub = MockCryptoUtils.generate_keypair()
+    return {
+        "priv1": key1_priv, "pub1": key1_pub,
+        "priv2": key2_priv, "pub2": key2_pub
+    }
+
+@pytest.fixture
+def valid_tracker(crypto_keys):
+    """Creates a ProvenanceTracker with a valid, multi-step chain."""
+    ANCHOR_ID = "0000_INITIAL_ANCHOR_HASH"
+    tracker = ProvenanceTracker(ANCHOR_ID)
+    
+    # Event 1: Signed by Editor 1
+    tracker.add_edit("edit_A", "editor_A", {"notes": "first pass"}, crypto_keys["priv1"])
+    # Event 2: Signed by Editor 2
+    tracker.add_edit("edit_B", "editor_B", {"notes": "second pass"}, crypto_keys["priv2"])
+    
+    key_map = {
+        "editor_A": crypto_keys["pub1"],
+        "editor_B": crypto_keys["pub2"]
+    }
+    
+    return tracker, key_map, ANCHOR_ID
+
+# =======================================================
+# 🧪 Test Cases
+# =======================================================
+
+def test_valid_chain_verification(valid_tracker):
+    """Test case 1: A chain with correct signatures and hashes must pass."""
+    tracker, key_map, _ = valid_tracker
+    assert tracker.verify_chain(key_map) is True
+
+def test_empty_chain_verification():
+    """Test case 2: An empty chain is trivially valid."""
+    ANCHOR_ID = "0000_INITIAL_ANCHOR_HASH"
+    tracker = ProvenanceTracker(ANCHOR_ID)
+    assert tracker.verify_chain({}) is True
+
+def test_invalid_signature_tampering(valid_tracker):
+    """Test case 3: Tampering with the signature of an existing event."""
+    tracker, key_map, _ = valid_tracker
+    
+    # 1. Tamper by changing the signature of the second event
+    tampered_chain = tracker.get_provenance_chain()
+    
+    # The signature is a hex string; corrupt the last character
+    original_sig = tampered_chain[1]["signature"]
+    tampered_chain[1]["signature"] = original_sig[:-1] + ('F' if original_sig[-1] != 'F' else 'E')
+    
+    # Manually update the tracker's chain to the tampered version
+    tracker.edit_chain = tampered_chain
+
+    # Verification must fail due to InvalidSignature
+    assert tracker.verify_chain(key_map) is False
+
+def test_invalid_hash_linkage_tampering(valid_tracker):
+    """Test case 4: Tampering with the previous_hash field (breaking the chain)."""
+    tracker, key_map, _ = valid_tracker
+    
+    # 1. Tamper by corrupting the previous_hash of the second event
+    tampered_chain = tracker.get_provenance_chain()
+    tampered_chain[1]["previous_hash"] = "FAKE_BROKEN_HASH_12345" # Break the hash link
+    
+    # Manually update the tracker's chain to the tampered version
+    tracker.edit_chain = tampered_chain
+    
+    # Verification must fail due to Hash Linkage broken
+    assert tracker.verify_chain(key_map) is False
+
+def test_payload_data_tampering(valid_tracker):
+    """Test case 5: Tampering with the event's metadata (breaking the signature)."""
+    tracker, key_map, _ = valid_tracker
+    
+    # 1. Tamper by changing the metadata in the second event
+    tampered_chain = tracker.get_provenance_chain()
+    tampered_chain[1]["metadata"]["notes"] = "THIRD PASS (INJECTED)" # The original signature no longer matches!
+    
+    # Manually update the tracker's chain to the tampered version
+    tracker.edit_chain = tampered_chain
+    
+    # Verification must fail due to InvalidSignature
+    assert tracker.verify_chain(key_map) is False
+
+def test_missing_public_key(valid_tracker):
+    """Test case 6: Verification fails if the editor's public key is missing."""
+    tracker, key_map, _ = valid_tracker
+    
+    # Remove the key for editor_B from the map
+    del key_map["editor_B"]
+    
+    # Verification must fail due to missing public key
+    assert tracker.verify_chain(key_map) is False
