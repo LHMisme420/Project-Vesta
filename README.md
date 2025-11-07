@@ -1,35 +1,17 @@
-Project-Vesta/
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── pyproject.toml
-├── .gitignore
-├── src/
-│   ├── vesta/
-│   │   ├── __init__.py
-│   │   ├── layer1_anchor/
-│   │   │   ├── __init__.py
-│   │   │   ├── anchor_seed_generator.py
-│   │   │   └── crypto_utils.py
-│   │   ├── layer2_provenance/
-│   │   │   ├── __init__.py
-│   │   │   ├── provenance_tracker.py
-│   │   │   └── nuance_calculator.py
-│   │   └── layer3_immune_system/
-│   │       ├── __init__.py
-│   │       ├── immune_agent.py
-│   │       └── consensus_engine.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_anchor.py
-│   ├── test_provenance.py
-│   └── test_immune.py
-├── examples/
-│   ├── basic_usage.py
-│   └── advanced_provenance.py
-└── docs/
-    ├── API.md
-    └── ARCHITECTURE.md
+# 🛡️ Project Vesta
+
+**Cryptographic Truth Anchor System for Media Authenticity**
+
+Project Vesta is a modular framework for generating, verifying, and scoring the integrity of digital media. It creates cryptographic birth certificates (anchors), tracks edit provenance, and calculates nuanced integrity scores—ensuring trust in every pixel.
+
+---
+
+## 📦 Installation
+
+```bash
+git clone https://github.com/LHMISME420/Project-Vesta.git
+cd Project-Vesta
+pip install -e .
                                      Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
