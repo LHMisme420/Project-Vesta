@@ -1,6 +1,6 @@
 """ 
-Project Vesta - Enhanced All-in-One Core Script (Layer 1, 2, 3) v1.1
-Consolidated media authenticity system with cryptographic provenance tracking
+Project Vesta - Enhanced All-in-One Core Script (Layer 1, 2, 3) v1.1 
+Consolidated media authenticity system with cryptographic provenance tracking 
 """
 
 import hashlib
@@ -45,7 +45,7 @@ class AnchorSeedGenerator:
     def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
         self.device_id = device_id
         self.private_key = private_key
-    
+
     def generate_perceptual_hash(self, raw_data: bytes) -> str:
         """Wavelet-Enhanced Perceptual Hash (Enhanced: Padding for short data)"""
         timestamp_nonce = str(time.time_ns()).encode()
@@ -112,6 +112,18 @@ class AnchorSeedGenerator:
         total_bits = len(p_hash_a) * 4
         return distance / total_bits
 
+    @staticmethod
+    def verify_anchor_signature(anchor: Dict[str, Any], public_key: ed25519.Ed25519PublicKey) -> bool:
+        """Verifies the signature of the original Anchor object."""
+        try:
+            payload_data = anchor["payload"]
+            payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+            signature = bytes.fromhex(anchor["signature"])
+            public_key.verify(signature, payload_str.encode())
+            return True
+        except (InvalidSignature, KeyError, ValueError):
+            return False
+
 # ==================== LAYER 2 HELPER: NUANCE CALCULATOR ====================
 class NuanceCalculator:
     @staticmethod
@@ -148,7 +160,7 @@ class ProvenanceTracker:
     def __init__(self, anchor_id: str):
         self.anchor_id = anchor_id
         self.edit_chain: List[Dict[str, Any]] = []
-    
+
     def _get_chain_tip_hash(self) -> str:
         if not self.edit_chain: 
             return self.anchor_id
@@ -223,7 +235,7 @@ class ConfidenceEngine:
         self.cnn = self._build_cnn()
         # Mock "training": Random init for demo
         torch.manual_seed(42)  # Reproducible randomness
-    
+
     def _build_cnn(self) -> nn.Module:
         class SimpleCNN(nn.Module):
             def __init__(self):
@@ -249,7 +261,7 @@ class ConfidenceEngine:
             pred = self.cnn(mock_img).item()
         # Bias to realistic range
         return max(0.7, min(0.98, pred + random.uniform(0.0, 0.28)))
-    
+
     def _get_community_consensus(self, media_url: str) -> float:
         return random.uniform(0.8, 0.95)
 
@@ -257,7 +269,7 @@ class ConfidenceEngine:
     # def _extract_video_frames(self, video_url: str) -> List[torch.Tensor]:
     #     # e.g., Use ffmpeg-python or opencv to extract frames
     #     return [torch.rand(1, 1, 28, 28)]  # Mock
-    
+
     def analyze_media(self, media_url: str, metadata: Dict[str, Any], 
                      provenance_chain: List[Dict[str, Any]] = None,
                      new_media_raw_data: bytes = None) -> Dict[str, Any]:
@@ -275,7 +287,8 @@ class ConfidenceEngine:
         # Enhanced: P-Hash comparison for unanchored media
         p_hash_confidence = None
         if not has_anchor and new_media_raw_data and 'original_p_hash' in metadata:
-            generator = AnchorSeedGenerator("temp_device", list(generate_keypair())[0])
+            temp_private_key, _ = generate_keypair()
+            generator = AnchorSeedGenerator("temp_device", temp_private_key)
             current_p_hash = generator.generate_perceptual_hash(new_media_raw_data)
             p_hash_distance = generator.compare_perceptual_hashes(metadata['original_p_hash'], current_p_hash)
             p_hash_confidence = max(0.0, 1.0 - p_hash_distance)
@@ -419,20 +432,12 @@ def main():
     print(f"   P-Hash Distance: {round(p_hash_distance, 3)}")
     print(f"   P-Hash Similarity: {round(1 - p_hash_distance, 3)}")
 
+    # --- Anchor Signature Verification Test ---
+    print("\n--- Anchor Signature Verification Test ---")
+    is_anchor_valid = AnchorSeedGenerator.verify_anchor_signature(anchor, public_key)
+    print(f"   Anchor Signature Valid: {is_anchor_valid}")
+
     print("\n=== Enhanced Example Complete ===")
 
 if __name__ == "__main__":
     main()
-# Add this static method to the AnchorSeedGenerator class:
-
-@staticmethod
-def verify_anchor_signature(anchor: Dict[str, Any], public_key: ed25519.Ed25519PublicKey) -> bool:
-    """Verifies the signature of the original Anchor object."""
-    try:
-        payload_data = anchor["payload"]
-        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
-        signature = bytes.fromhex(anchor["signature"])
-        public_key.verify(signature, payload_str.encode())
-        return True
-    except (InvalidSignature, KeyError, ValueError):
-        return False
