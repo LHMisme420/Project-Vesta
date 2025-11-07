@@ -169,3 +169,38 @@ def calculate_final_confidence(media_url: str, metadata: dict) -> dict:
 # # This is what the browser extension would call when loading a page.
 # result = calculate_final_confidence("https://someimage.jpg", {})
 # print(result)
+import hashlib
+import time
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ed25519
+
+class AnchorSeedGenerator:
+    """Creates a verifiable, signed Anchor for a piece of media."""
+    
+    def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
+        self.device_id = device_id
+        self.private_key = private_key
+        
+    def generate_perceptual_hash(self, raw_data: bytes) -> str:
+        """Enhanced perceptual hash with timestamp nonce"""
+        timestamp_nonce = str(time.time()).encode()
+        combined_data = raw_data + timestamp_nonce
+        return hashlib.sha256(combined_data).hexdigest()
+    
+    def create_truth_anchor(self, raw_data: bytes, metadata: dict) -> dict:
+        timestamp = int(time.time())
+        perceptual_hash = self.generate_perceptual_hash(raw_data)
+        
+        payload = f"{perceptual_hash}|{self.device_id}|{timestamp}|{str(metadata)}"
+        signature = self.private_key.sign(payload.encode())
+        
+        return {
+            "anchor_id": hashlib.sha256(signature).hexdigest(),
+            "payload": {
+                "p_hash": perceptual_hash,
+                "device_id": self.device_id,
+                "timestamp": timestamp,
+                "metadata": metadata
+            },
+            "signature": signature.hex()
+        }
