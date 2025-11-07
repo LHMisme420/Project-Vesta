@@ -493,3 +493,399 @@ def main():
 
 if __name__ == "__main__":
     main()
+# ==================== TEST SUITE ====================
+import pytest
+import copy
+
+class TestVestaSystem:
+    """Comprehensive test suite for Project Vesta components"""
+    
+    def test_anchor_creation(self):
+        """Test that anchors can be created and verified"""
+        private_key, public_key = generate_keypair()
+        generator = AnchorSeedGenerator("TEST_CAMERA", private_key)
+        anchor = generator.create_truth_anchor(b"test_data", {"test": "metadata"})
+        
+        assert "anchor_id" in anchor
+        assert "signature" in anchor
+        assert AnchorSeedGenerator.verify_anchor_signature(anchor, public_key)
+    
+    def test_provenance_chain_integrity(self):
+        """Test provenance chain cryptographic integrity"""
+        private_key, public_key = generate_keypair()
+        generator = AnchorSeedGenerator("TEST_CAMERA", private_key)
+        anchor = generator.create_truth_anchor(b"test_data", {})
+        
+        tracker = ProvenanceTracker(anchor["anchor_id"])
+        tracker.add_edit("test_edit", "editor_1", {"note": "test"}, private_key)
+        
+        key_map = {"editor_1": public_key}
+        assert tracker.verify_chain(key_map)
+    
+    def test_nuance_score_calculation(self):
+        """Test nuance scoring logic"""
+        # Test with no anchor
+        assert NuanceCalculator.calculate_nuance_score([], False) == 0.3
+        
+        # Test with empty chain but anchor
+        assert NuanceCalculator.calculate_nuance_score([], True) == 1.0
+        
+        # Test with AI edits
+        ai_edits = [{"edit_type": "ai_generate", "metadata": {}}]
+        score = NuanceCalculator.calculate_nuance_score(ai_edits, True)
+        assert score == 0.8  # 1.0 - 0.2 for AI edit
+
+def run_tests():
+    """Run the test suite"""
+    print("🧪 Running Project Vesta Test Suite...")
+    test_suite = TestVestaSystem()
+    
+    tests = [
+        test_suite.test_anchor_creation,
+        test_suite.test_provenance_chain_integrity,
+        test_suite.test_nuance_score_calculation,
+    ]
+    
+    for test in tests:
+        try:
+            test()
+            print(f"✅ {test.__name__} passed")
+        except Exception as e:
+            print(f"❌ {test.__name__} failed: {e}")
+    
+    print("🧪 Test suite completed!")
+    # ==================== UTILITY FUNCTIONS ====================
+def export_vesta_analysis(anchor, provenance_chain, analysis, filename="vesta_analysis.json"):
+    """Export complete Vesta analysis to JSON file"""
+    export_data = {
+        "export_timestamp": int(time.time()),
+        "export_version": "1.1",
+        "anchor": anchor,
+        "provenance_chain": provenance_chain,
+        "confidence_analysis": analysis,
+        "system_info": {
+            "project_vesta_version": "1.1",
+            "export_format": "comprehensive"
+        }
+    }
+    
+    with open(filename, 'w') as f:
+        json.dump(export_data, f, indent=2)
+    
+    return filename
+
+def create_media_report(analysis):
+    """Create a human-readable media authenticity report"""
+    report = f"""
+MEDIA AUTHENTICITY REPORT
+=========================
+
+Overall Confidence: {analysis['confidence_score']} / 1.0
+Risk Level: {analysis['risk_level'].upper()}
+Recommendation: {analysis['recommendation'].replace('_', ' ').title()}
+
+DETAILS:
+--------
+{analysis['explanation']}
+
+COMPONENT SCORES:
+-----------------
+- Has Truth Anchor: {analysis['components']['has_truth_anchor']}
+- AI Confidence: {analysis['components']['ai_confidence']}
+- Community Consensus: {analysis['components']['community_consensus']}
+- Nuance Score: {analysis['components']['nuance_score']}
+- Edit Count: {analysis['components']['edit_count']}
+- Profit Correlation Flag: {analysis['components']['profit_correlation_flag']}
+"""
+    
+    if 'p_hash_confidence' in analysis['components']:
+        report += f"- P-Hash Confidence: {analysis['components']['p_hash_confidence']}\n"
+    
+    return report
+
+def batch_analyze_media(media_list):
+    """Analyze multiple media items in batch"""
+    engine = ConfidenceEngine()
+    results = []
+    
+    for media_item in media_list:
+        try:
+            analysis = engine.analyze_media(
+                media_url=media_item.get('url', ''),
+                metadata=media_item.get('metadata', {}),
+                provenance_chain=media_item.get('provenance_chain', [])
+            )
+            results.append({
+                'media_id': media_item.get('id', 'unknown'),
+                'analysis': analysis
+            })
+        except Exception as e:
+            results.append({
+                'media_id': media_item.get('id', 'unknown'),
+                'error': str(e)
+            })
+    
+    return results
+    # ==================== WEB API STUB ====================
+class VestaAPI:
+    """REST API stub for Project Vesta (for future implementation)"""
+    
+    def __init__(self):
+        self.engine = ConfidenceEngine()
+        self.anchors = {}
+        self.provenance_chains = {}
+    
+    def create_anchor(self, device_id, media_data, metadata):
+        """API endpoint: Create new truth anchor"""
+        private_key, public_key = generate_keypair()
+        generator = AnchorSeedGenerator(device_id, private_key)
+        anchor = generator.create_truth_anchor(media_data, metadata)
+        
+        # Store anchor and public key
+        anchor_id = anchor["anchor_id"]
+        self.anchors[anchor_id] = {
+            "anchor": anchor,
+            "public_key": serialize_public_key(public_key)
+        }
+        
+        return {
+            "anchor_id": anchor_id,
+            "anchor": anchor,
+            "public_key": serialize_public_key(public_key)
+        }
+    
+    def add_provenance_event(self, anchor_id, edit_type, editor_id, edit_metadata):
+        """API endpoint: Add provenance event to existing anchor"""
+        if anchor_id not in self.anchors:
+            return {"error": "Anchor not found"}
+        
+        # In real implementation, you'd have proper key management
+        private_key, _ = generate_keypair()
+        
+        if anchor_id not in self.provenance_chains:
+            self.provenance_chains[anchor_id] = ProvenanceTracker(anchor_id)
+        
+        tracker = self.provenance_chains[anchor_id]
+        event_id = tracker.add_edit(edit_type, editor_id, edit_metadata, private_key)
+        
+        return {
+            "event_id": event_id,
+            "provenance_chain_length": len(tracker.get_provenance_chain())
+        }
+    
+    def analyze_media(self, media_url, metadata, anchor_id=None):
+        """API endpoint: Analyze media authenticity"""
+        provenance_chain = []
+        if anchor_id and anchor_id in self.provenance_chains:
+            provenance_chain = self.provenance_chains[anchor_id].get_provenance_chain()
+        
+        analysis = self.engine.analyze_media(media_url, metadata, provenance_chain)
+        return analysis
+        # ==================== PERFORMANCE MONITORING ====================
+class PerformanceMonitor:
+    """Monitor system performance and metrics"""
+    
+    def __init__(self):
+        self.metrics = {
+            'anchors_created': 0,
+            'edits_tracked': 0,
+            'analyses_performed': 0,
+            'chain_verifications': 0,
+            'errors': 0
+        }
+        self.start_time = time.time()
+    
+    def record_metric(self, metric_name):
+        """Record a metric event"""
+        if metric_name in self.metrics:
+            self.metrics[metric_name] += 1
+    
+    def get_performance_report(self):
+        """Generate performance report"""
+        current_time = time.time()
+        uptime = current_time - self.start_time
+        
+        report = {
+            'uptime_seconds': round(uptime, 2),
+            'metrics': self.metrics.copy(),
+            'average_throughput': {
+                'anchors_per_hour': round(self.metrics['anchors_created'] / (uptime / 3600), 2),
+                'analyses_per_hour': round(self.metrics['analyses_performed'] / (uptime / 3600), 2)
+            },
+            'system_health': 'HEALTHY' if self.metrics['errors'] == 0 else 'DEGRADED'
+        }
+        
+        return report
+
+# Global performance monitor instance
+performance_monitor = PerformanceMonitor()
+# ==================== ENHANCED SECURITY ====================
+class SecurityAuditor:
+    """Enhanced security auditing and validation"""
+    
+    @staticmethod
+    def validate_anchor_structure(anchor):
+        """Validate anchor structure and content"""
+        required_fields = ['anchor_id', 'payload', 'signature', 'version']
+        
+        for field in required_fields:
+            if field not in anchor:
+                return False, f"Missing required field: {field}"
+        
+        # Validate payload structure
+        payload = anchor['payload']
+        payload_fields = ['p_hash', 'device_id', 'timestamp', 'metadata']
+        for field in payload_fields:
+            if field not in payload:
+                return False, f"Missing payload field: {field}"
+        
+        # Validate timestamp (not in future, not too old)
+        current_time = time.time()
+        if payload['timestamp'] > current_time + 300:  # 5 minutes in future
+            return False, "Anchor timestamp is in future"
+        
+        if payload['timestamp'] < current_time - 31536000:  # 1 year ago
+            return False, "Anchor timestamp is too old"
+        
+        return True, "Anchor structure valid"
+    
+    @staticmethod
+    def detect_anomalies(provenance_chain):
+        """Detect anomalies in provenance chain"""
+        anomalies = []
+        
+        if not provenance_chain:
+            return anomalies
+        
+        # Check for rapid successive edits (potential automation)
+        timestamps = [event['timestamp'] for event in provenance_chain]
+        for i in range(1, len(timestamps)):
+            time_diff = timestamps[i] - timestamps[i-1]
+            if time_diff < 1:  # Less than 1 second between edits
+                anomalies.append(f"Rapid successive edits at position {i}")
+        
+        # Check for suspicious edit patterns
+        edit_types = [event['edit_type'] for event in provenance_chain]
+        ai_edit_count = sum(1 for edit_type in edit_types if 'ai' in edit_type.lower())
+        if ai_edit_count > len(edit_types) * 0.5:  # More than 50% AI edits
+            anomalies.append("High proportion of AI-generated edits")
+        
+        return anomalies
+        # ==================== ENHANCED MAIN DEMO ====================
+def enhanced_demo():
+    """Comprehensive demo showcasing all Vesta features"""
+    print("🚀 Project Vesta - Comprehensive Demo")
+    print("=" * 50)
+    
+    # Initialize monitoring
+    monitor = PerformanceMonitor()
+    
+    # Demo all components
+    private_key, public_key = generate_keypair()
+    generator = AnchorSeedGenerator("PRO_DEMO_CAMERA", private_key)
+    
+    # Create anchor
+    media_data = b"sample_media_content_2024"
+    metadata = {
+        "format": "RAW",
+        "resolution": "4000x3000", 
+        "camera_model": "DemoCam X1",
+        "location": "Demo Studio",
+        "profit_correlation": 0.02
+    }
+    
+    print("\n1. 🎯 Creating Truth Anchor...")
+    anchor = generator.create_truth_anchor(media_data, metadata)
+    monitor.record_metric('anchors_created')
+    print(f"   ✅ Anchor created: {anchor['anchor_id'][:24]}...")
+    
+    # Validate anchor
+    is_valid, message = SecurityAuditor.validate_anchor_structure(anchor)
+    print(f"   🔍 Anchor validation: {message}")
+    
+    print("\n2. 🔗 Building Provenance Chain...")
+    tracker = ProvenanceTracker(anchor["anchor_id"])
+    
+    edits = [
+        ("color_correction", "editor_john", {"adjustment": "exposure+0.5", "white_balance": "auto"}),
+        ("crop", "editor_john", {"from": "4000x3000", "to": "1920x1080", "aspect_ratio": "16:9"}),
+        ("filter_apply", "editor_sarah", {"filter": "vintage", "intensity": 0.3}),
+        ("ai_enhance", "editor_ai", {"model": "SuperRes-v2", "purpose": "quality_improvement"})
+    ]
+    
+    for edit_type, editor, edit_meta in edits:
+        tracker.add_edit(edit_type, editor, edit_meta, private_key)
+        monitor.record_metric('edits_tracked')
+        print(f"   ✅ Added: {edit_type} by {editor}")
+    
+    print(f"   📊 Total edits: {len(tracker.get_provenance_chain())}")
+    
+    print("\n3. 🛡️ Security Audit...")
+    anomalies = SecurityAuditor.detect_anomalies(tracker.get_provenance_chain())
+    if anomalies:
+        print("   ⚠️  Anomalies detected:")
+        for anomaly in anomalies:
+            print(f"      - {anomaly}")
+    else:
+        print("   ✅ No security anomalies detected")
+    
+    print("\n4. 🔐 Cryptographic Verification...")
+    key_map = {"editor_john": public_key, "editor_sarah": public_key, "editor_ai": public_key}
+    is_chain_valid = tracker.verify_chain(key_map)
+    monitor.record_metric('chain_verifications')
+    print(f"   {'✅' if is_chain_valid else '❌'} Chain integrity: {is_chain_valid}")
+    
+    print("\n5. 🧠 Confidence Analysis...")
+    engine = ConfidenceEngine()
+    analysis = engine.analyze_media(
+        media_url="https://demo.com/professional/photo.jpg",
+        metadata={"vesta_anchor_id": anchor["anchor_id"], **metadata},
+        provenance_chain=tracker.get_provenance_chain()
+    )
+    monitor.record_metric('analyses_performed')
+    
+    print(f"   📈 Confidence Score: {analysis['confidence_score']}")
+    print(f"   🎯 Risk Level: {analysis['risk_level'].upper()}")
+    print(f"   💡 Recommendation: {analysis['recommendation'].replace('_', ' ').title()}")
+    
+    print("\n6. 📊 Generating Reports...")
+    # Export JSON
+    export_file = export_vesta_analysis(anchor, tracker.get_provenance_chain(), analysis, "comprehensive_demo.json")
+    print(f"   ✅ JSON export: {export_file}")
+    
+    # Generate human-readable report
+    report = create_media_report(analysis)
+    print("   ✅ Human-readable report generated")
+    
+    print("\n7. 📈 Performance Metrics...")
+    perf_report = monitor.get_performance_report()
+    print(f"   ⏱️  Uptime: {perf_report['uptime_seconds']}s")
+    print(f"   📊 Anchors created: {perf_report['metrics']['anchors_created']}")
+    print(f"   🔄 Analyses performed: {perf_report['metrics']['analyses_performed']}")
+    print(f"   🏥 System health: {perf_report['system_health']}")
+    
+    print("\n" + "=" * 50)
+    print("🎉 Demo completed successfully!")
+    print("💡 Check 'comprehensive_demo.json' for full analysis export")
+
+# ==================== COMMAND LINE INTERFACE ====================
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        if command == "demo":
+            enhanced_demo()
+        elif command == "tests":
+            run_tests()
+        elif command == "quick":
+            main()  # Original simple demo
+        else:
+            print("Usage: python vesta_core.py [demo|tests|quick]")
+            print("  demo  - Run comprehensive demo")
+            print("  tests - Run test suite") 
+            print("  quick - Run quick demo")
+            print("  (no args) - Run quick demo")
+    else:
+        # Run quick demo by default
+        main()
