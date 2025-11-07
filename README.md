@@ -902,3 +902,165 @@ def test_missing_public_key(valid_tracker):
     
     # Verification must fail due to missing public key
     assert tracker.verify_chain(key_map) is False
+"""
+Project Vesta - Consolidated Media Authenticity System
+Layers: Anchor → Provenance → Confidence
+"""
+
+import hashlib
+import time
+import json
+import random
+import numpy as np
+from typing import List, Dict, Any
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
+from cryptography.exceptions import InvalidSignature
+
+# ==================== CONSTANTS ====================
+PROFIT_CORRELATION_MAX: float = 0.05
+ETHICAL_BENEFIT_MIN: float = 0.7
+P_HASH_SIGNIFICANCE_THRESHOLD: float = 0.40
+
+# ==================== LAYER 1: TRUTH ANCHOR ====================
+class AnchorSeedGenerator:
+    def __init__(self, device_id: str, private_key: ed25519.Ed25519PrivateKey):
+        self.device_id = device_id
+        self.private_key = private_key
+    
+    def generate_perceptual_hash(self, raw_data: bytes) -> str:
+        """Enhanced perceptual hash with padding for robustness"""
+        timestamp_nonce = str(time.time_ns()).encode()
+        combined_data = raw_data + timestamp_nonce
+        
+        try:
+            data_array = np.frombuffer(combined_data[:1024], dtype=np.uint8)
+            pad_length = 32 - (len(data_array) % 32)
+            if pad_length != 32:
+                data_array = np.pad(data_array, (0, pad_length), 'constant', constant_values=0)
+            feature_vector = np.mean(data_array.reshape(-1, 32), axis=0)  
+        except ValueError:
+            feature_vector = np.array([int(hashlib.sha1(combined_data).hexdigest()[:16], 16)])
+        
+        return hashlib.sha256(str(feature_vector).encode('utf-8')).hexdigest()
+
+    def create_truth_anchor(self, raw_data: bytes, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        timestamp = int(time.time())
+        perceptual_hash = self.generate_perceptual_hash(raw_data)
+        
+        payload_data = {
+            "p_hash": perceptual_hash,
+            "device_id": self.device_id,
+            "timestamp": timestamp,
+            "metadata": metadata
+        }
+        
+        payload_str = json.dumps(payload_data, sort_keys=True, separators=(',', ':'))
+        signature = self.private_key.sign(payload_str.encode())
+        
+        return {
+            "anchor_id": hashlib.sha256(signature).hexdigest(),
+            "payload": payload_data,
+            "signature": signature.hex(),
+            "version": "1.1"
+        }
+
+# ==================== LAYER 2: PROVENANCE TRACKER ====================
+class ProvenanceTracker:
+    def __init__(self, anchor_id: str):
+        self.anchor_id = anchor_id
+        self.edit_chain: List[Dict[str, Any]] = []
+    
+    def add_edit(self, edit_type: str, editor_id: str, edit_metadata: Dict[str, Any], 
+                 private_key: ed25519.Ed25519PrivateKey) -> str:
+        timestamp = int(time.time())
+        previous_hash = self.edit_chain[-1]["event_id"] if self.edit_chain else self.anchor_id
+        
+        edit_event = {
+            "edit_type": edit_type,
+            "editor_id": editor_id, 
+            "timestamp": timestamp,
+            "metadata": edit_metadata,
+            "previous_hash": previous_hash
+        }
+        
+        event_str = json.dumps(edit_event, sort_keys=True, separators=(',', ':'))
+        signature = private_key.sign(event_str.encode())
+        
+        signed_event = {
+            **edit_event,
+            "signature": signature.hex(),
+            "event_id": hashlib.sha256(signature).hexdigest()
+        }
+        
+        self.edit_chain.append(signed_event)
+        return signed_event["event_id"]
+
+    def verify_chain(self, public_key_map: Dict[str, ed25519.Ed25519PublicKey]) -> bool:
+        """Verify cryptographic integrity of the entire provenance chain"""
+        current_hash = self.anchor_id
+        
+        for i, event in enumerate(self.edit_chain):
+            # Check hash linkage
+            if event["previous_hash"] != current_hash:
+                return False
+            
+            # Verify signature
+            editor_id = event["editor_id"]
+            if editor_id not in public_key_map:
+                return False
+            
+            try:
+                payload = json.dumps({
+                    "edit_type": event["edit_type"],
+                    "editor_id": event["editor_id"],
+                    "timestamp": event["timestamp"],
+                    "metadata": event["metadata"],
+                    "previous_hash": event["previous_hash"]
+                }, sort_keys=True, separators=(',', ':')).encode()
+                
+                public_key_map[editor_id].verify(
+                    bytes.fromhex(event["signature"]), 
+                    payload
+                )
+            except InvalidSignature:
+                return False
+            
+            current_hash = event["event_id"]
+        
+        return True
+
+# ==================== USAGE EXAMPLE ====================
+def generate_keypair():
+    private_key = ed25519.Ed25519PrivateKey.generate()
+    return private_key, private_key.public_key()
+
+def main():
+    print("=== Project Vesta Demo ===\n")
+    
+    # Setup
+    private_key, public_key = generate_keypair()
+    generator = AnchorSeedGenerator("CAMERA_001", private_key)
+    
+    # Create anchor
+    anchor = generator.create_truth_anchor(
+        b"sample_media_data", 
+        {"format": "JPEG", "resolution": "1920x1080"}
+    )
+    print(f"✓ Anchor created: {anchor['anchor_id'][:16]}...")
+    
+    # Track provenance
+    tracker = ProvenanceTracker(anchor["anchor_id"])
+    tracker.add_edit("color_correction", "editor_1", {"adjustment": "brightness+10"}, private_key)
+    tracker.add_edit("crop", "editor_1", {"dimensions": "1280x720"}, private_key)
+    print(f"✓ Provenance chain: {len(tracker.edit_chain)} edits")
+    
+    # Verify chain
+    key_map = {"editor_1": public_key}
+    is_valid = tracker.verify_chain(key_map)
+    print(f"✓ Chain verification: {is_valid}")
+    
+    print("\n=== Demo Complete ===")
+
+if __name__ == "__main__":
+    main()
