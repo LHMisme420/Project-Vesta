@@ -1428,3 +1428,72 @@ print("📚 Features: Crypto Anchors • Provenance Tracking • AI Analysis")
 print("🛡️  Security: Ed25519 Signatures • Chain Integrity • Anomaly Detection")  
 print("📊 Analytics: Real-time Monitoring • Batch Processing • Export")
 print("="*60)
+
+
+def analyze_media(self, media_url: str, metadata: Dict[str, Any], 
+                 provenance_chain: List[Dict[str, Any]] = None,
+                 new_media_raw_data: bytes = None) -> Dict[str, Any]:
+    
+    # --- Base Setup and Scoring ---
+    has_anchor = 'vesta_anchor_id' in metadata
+    provenance_chain = provenance_chain or []
+    ai_confidence = self._get_ai_confidence(media_url)
+    community_consensus = self._get_community_consensus(media_url)
+    nuance_score = NuanceCalculator.calculate_nuance_score(provenance_chain, has_anchor)
+    
+    # --- Legendary Addition: Security and Ethical Penalties ---
+    
+    # 1. Ethical Penalty
+    profit_correlation = metadata.get('profit_correlation', 0.0)
+    profit_flag = profit_correlation > PROFIT_CORRELATION_MAX
+    ethical_penalty = 0.0
+    if profit_flag:
+        ethical_penalty += 0.1 # Base penalty for high profit motive
+        nuance_score *= 0.8
+        ai_confidence *= 0.9
+        
+    # 2. Anomaly/Vulnerability Penalty (Audit the chain *before* final score)
+    anomalies = SecurityAuditor.detect_anomalies(provenance_chain)
+    vulnerability_penalty = min(0.3, len(anomalies) * 0.1) # Max 0.3 penalty
+    
+    # --- Weighted Final Score ---
+    
+    # Adjusted Weighting: Prioritize Nuance (History)
+    if has_anchor:
+        # Standard anchored weighting: Nuance 60%, AI 20%, Community 10%, Penalties 10%
+        final_score = (nuance_score * 0.6) + (ai_confidence * 0.2) + (community_consensus * 0.1) - ethical_penalty - vulnerability_penalty
+        explanation = f"Anchored media: {NuanceCalculator.get_nuance_description(nuance_score)} - Audit Penalty: {round(vulnerability_penalty, 3)}"
+    else:
+        # Unanchored weighting: AI 50%, Community 40%, Penalties 10%
+        final_score = (ai_confidence * 0.5) + (community_consensus * 0.4) - ethical_penalty - vulnerability_penalty
+        explanation = "Unanchored media - verification based on AI and consensus (NO PROVENANCE)."
+    
+    final_score = max(0.0, min(1.0, final_score)) # Clamp score between 0 and 1
+    
+    # --- Determine Risk and Output ---
+    if final_score >= 0.8:
+        risk_level = "low"
+        recommendation = "trust_with_context"
+    elif final_score >= ETHICAL_BENEFIT_MIN:
+        risk_level = "medium"
+        recommendation = "verify_provenance_but_ethically_sound"
+    else:
+        risk_level = "high"
+        recommendation = "exercise_caution"
+    
+    result = {
+        "confidence_score": round(final_score, 3),
+        "risk_level": risk_level,
+        "recommendation": recommendation,
+        "explanation": explanation,
+        "components": {
+            "has_truth_anchor": has_anchor,
+            "ai_confidence": round(ai_confidence, 3),
+            "community_consensus": round(community_consensus, 3),
+            "nuance_score": round(nuance_score, 3),
+            "edit_count": len(provenance_chain),
+            "profit_correlation_flag": profit_flag,
+            "vulnerability_penalty": round(vulnerability_penalty, 3) # New Legendary Component
+        }
+    }
+    return result
