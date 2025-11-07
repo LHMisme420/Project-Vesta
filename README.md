@@ -1,5 +1,5 @@
 # 🛡️ Project Vesta
-# ... (Existing Layer 2 code ends here) ...
+# 
     provenance = tracker.get_provenance_chain()
     print(f"   Edit events: {len(provenance)}")
     
