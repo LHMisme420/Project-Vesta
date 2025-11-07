@@ -60,7 +60,7 @@ A three-layer protocol for creating verifiable authenticity proofs for digital m
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/Project-Vesta.git
+git clone https://github.com/LHMISME420/Project-Vesta.git
 cd Project-Vesta
 
 # Install dependencies
